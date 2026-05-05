@@ -1,4 +1,5 @@
 import { FormEvent, MouseEvent, Suspense, lazy, useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import type {
   AccountMessageThread,
   AccountState,
@@ -964,6 +965,9 @@ export function App() {
   const [runtimeSessionCoins, setRuntimeSessionCoins] = useState<number>(0);
   const [runtimeCheckpointLabel, setRuntimeCheckpointLabel] = useState<string | null>(null);
   const [runtimeCollectedObjectIds, setRuntimeCollectedObjectIds] = useState<string[]>([]);
+  const [runtimePrompt, setRuntimePrompt] = useState<string | null>(null);
+  const [runtimeChatDraft, setRuntimeChatDraft] = useState<string>("");
+  const [runtimeChatMessages, setRuntimeChatMessages] = useState<Array<{ id: string; name: string; body: string; tone: "me" | "system" | "player" }>>([]);
   const [runtimeEngine, setRuntimeEngine] = useState<RuntimeEngine>("fairblox-3d");
   const [authError, setAuthError] = useState<string>("");
   const [sessionRestoreMessage, setSessionRestoreMessage] = useState<string>("");
@@ -1501,12 +1505,22 @@ export function App() {
       setRuntimeSessionCoins(0);
       setRuntimeCheckpointLabel(null);
       setRuntimeCollectedObjectIds([]);
+      setRuntimePrompt(null);
+      setRuntimeChatDraft("");
+      setRuntimeChatMessages([]);
       return;
     }
     setRuntimeFacing(0);
     setRuntimeSessionCoins(0);
     setRuntimeCheckpointLabel(null);
     setRuntimeCollectedObjectIds([]);
+    setRuntimePrompt("Walk to the fountain, upgrade booths, or collectible pickups.");
+    setRuntimeChatDraft("");
+    setRuntimeChatMessages([
+      { id: `rt-${activeSession.id}-1`, name: "System", body: "Connected to live hub session.", tone: "system" },
+      { id: `rt-${activeSession.id}-2`, name: "Nova", body: "Shop is glowing tonight.", tone: "player" },
+      { id: `rt-${activeSession.id}-3`, name: "Jax", body: "Grab the pickups around spawn first.", tone: "player" },
+    ]);
     runtimeJumpVelocityRef.current = 0;
     runtimeOnGroundRef.current = true;
   }, [activeSession?.id]);
@@ -1630,6 +1644,10 @@ export function App() {
     if (!runtimeMapData || !runtimePosition) {
       return;
     }
+    const nearSpawn = Math.hypot(runtimeMapData.spawn.x - runtimePosition.x, runtimeMapData.spawn.z - runtimePosition.z) <= 3;
+    const nearCenter = Math.hypot(runtimePosition.x, runtimePosition.z) <= 4.5;
+    const nearShop = Math.hypot(runtimePosition.x - 15.5, runtimePosition.z) <= 5.5
+      || Math.hypot(runtimePosition.x + 15.5, runtimePosition.z) <= 5.5;
     const collectible = runtimeMapData.objects.find((object) => {
       if (runtimeCollectedObjectIds.includes(object.id)) {
         return false;
@@ -1647,9 +1665,10 @@ export function App() {
       setRuntimeCollectedObjectIds((current) => [...current, collectible.id]);
       setRuntimeSessionCoins((current) => current + reward);
       pushToast(`Collected ${reward} coin${reward === 1 ? "" : "s"}`, "success");
+      setRuntimePrompt(`Pickup collected. Wallet in session: ${runtimeSessionCoins + reward}.`);
     }
 
-    const checkpoint = runtimeMapData.checkpoints.find((entry, index) => {
+      const checkpoint = runtimeMapData.checkpoints.find((entry, index) => {
       const radius = entry.radius ?? 2.4;
       const dx = entry.position.x - runtimePosition.x;
       const dz = entry.position.z - runtimePosition.z;
@@ -1662,9 +1681,10 @@ export function App() {
       }
       setRuntimeCheckpointLabel(label);
       setStoreMessage(`Checkpoint reached: ${label}`);
+      setRuntimePrompt(`Checkpoint reached: ${label}`);
       return true;
     });
-    if (!checkpoint) {
+      if (!checkpoint) {
       const nearby = runtimeMapData.checkpoints.some((entry) => {
         const radius = entry.radius ?? 2.4;
         const dx = entry.position.x - runtimePosition.x;
@@ -1675,7 +1695,38 @@ export function App() {
         setRuntimeCheckpointLabel(null);
       }
     }
+    if (!checkpoint && !collectible) {
+      if (nearCenter) {
+        setRuntimePrompt("Fountain plaza: social zone and session meetup point.");
+      } else if (nearShop) {
+        setRuntimePrompt("Upgrade booth nearby. This is where shop and portal prompts should appear.");
+      } else if (nearSpawn) {
+        setRuntimePrompt("Spawn zone: good place to regroup after reset.");
+      } else {
+        setRuntimePrompt("Explore the hub, collect pickups, and look for active portals.");
+      }
+    }
   }, [runtimeCheckpointLabel, runtimeCollectedObjectIds, runtimeMapData, runtimePosition]);
+
+  useEffect(() => {
+    if (!activeSession) {
+      return;
+    }
+    const chatter = [
+      "Anyone heading to the shop?",
+      "This hub needs more portals.",
+      "Checkpoint route is clear.",
+      "Collectibles respawn fast here.",
+      "Queue up at the plaza fountain.",
+    ];
+    const speakers = ["Nova", "Jax", "Lumi", "Pixel", "Mira"];
+    const timer = window.setInterval(() => {
+      const name = speakers[Math.floor(Math.random() * speakers.length)] ?? "Player";
+      const body = chatter[Math.floor(Math.random() * chatter.length)] ?? "Nice hub.";
+      setRuntimeChatMessages((current) => [...current.slice(-7), { id: `${Date.now()}-${Math.random()}`, name, body, tone: "player" }]);
+    }, 9000);
+    return () => window.clearInterval(timer);
+  }, [activeSession?.id]);
 
   useEffect(() => {
     if (!sessionToken) {
@@ -3183,6 +3234,15 @@ export function App() {
   const formatCoins = (value: number) => `${coinMark} ${value.toLocaleString()}`;
   const creatorShare = Math.max(10, 100 - marketFeePercent);
   const projectedMonthlyRevenue = Math.round(economySummary.creatorNetCoins * 1.35 + premiumPrice * 40);
+  const runtimeRoster = activeSession
+    ? [
+        { name: profile?.displayName ?? "You", score: 1200 + runtimeSessionCoins * 25, accent: "linear-gradient(135deg, #ef4444, #f97316)" },
+        { name: "Nova", score: 1080, accent: "linear-gradient(135deg, #06b6d4, #3b82f6)" },
+        { name: "Jax", score: 1015, accent: "linear-gradient(135deg, #84cc16, #22c55e)" },
+        { name: "Lumi", score: 940, accent: "linear-gradient(135deg, #f59e0b, #facc15)" },
+        { name: "Pixel", score: 880, accent: "linear-gradient(135deg, #a855f7, #ec4899)" },
+      ].slice(0, Math.max(3, Math.min(activeSession.playerCount, 5)))
+    : [];
   const homeSidebarLinks = [
     { label: "Home", view: "home", note: "" },
     { label: "Profile", view: "profile", note: "@me" },
@@ -3202,6 +3262,19 @@ export function App() {
     { name: "Mika", status: "Grinding tycoons", tone: "mint" },
   ];
   const activeHomeTitle = heroGame?.title ?? "your next world";
+
+  function sendRuntimeChatMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const body = runtimeChatDraft.trim();
+    if (!body) {
+      return;
+    }
+    setRuntimeChatMessages((current) => [
+      ...current.slice(-7),
+      { id: `${Date.now()}-${Math.random()}`, name: profile?.displayName ?? "You", body, tone: "me" },
+    ]);
+    setRuntimeChatDraft("");
+  }
 
   return (
     <main className="page">
@@ -4903,6 +4976,10 @@ export function App() {
                     </div>
                     <div className="runtime-controls">
                       <p className="tool-title">Move Avatar</p>
+                      <div className="runtime-prompt-card">
+                        <span className="runtime-prompt-label">Live prompt</span>
+                        <strong>{runtimePrompt ?? "Explore the hub."}</strong>
+                      </div>
                       <div className="runtime-engine-toggle" role="group" aria-label="Runtime engine selection">
                         <button
                           type="button"
@@ -4934,6 +5011,52 @@ export function App() {
                       <button type="button" className="secondary" onClick={() => setRuntimePosition(activeSession.spawn)} disabled={usingUnityRuntime}>
                         Reset spawn
                       </button>
+                      <div className="runtime-sidecard">
+                        <div className="section-head">
+                          <h2>Players</h2>
+                          <span>Live roster</span>
+                        </div>
+                        <div className="runtime-roster">
+                          {runtimeRoster.map((entry, index) => (
+                            <div key={`runtime-roster-${entry.name}`} className="runtime-roster-row" style={{ "--runtime-roster-accent": entry.accent } as CSSProperties}>
+                              <span className="runtime-roster-rank">#{index + 1}</span>
+                              <strong>{entry.name}</strong>
+                              <span>{entry.score.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="runtime-sidecard">
+                        <div className="section-head">
+                          <h2>Session Chat</h2>
+                          <span>Hub feed</span>
+                        </div>
+                        <div className="runtime-chat-feed">
+                          {runtimeChatMessages.map((entry) => (
+                            <div
+                              key={entry.id}
+                              className={
+                                entry.tone === "me"
+                                  ? "runtime-chat-row runtime-chat-row-me"
+                                  : entry.tone === "system"
+                                    ? "runtime-chat-row runtime-chat-row-system"
+                                    : "runtime-chat-row"
+                              }
+                            >
+                              <strong>{entry.name}</strong>
+                              <span>{entry.body}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <form className="runtime-chat-form" onSubmit={sendRuntimeChatMessage}>
+                          <input
+                            value={runtimeChatDraft}
+                            onChange={(event) => setRuntimeChatDraft(event.target.value)}
+                            placeholder="Type to chat in this session"
+                          />
+                          <button type="submit">Send</button>
+                        </form>
+                      </div>
                       <p className="hint">
                         {usingUnityRuntime
                           ? "Unity uses in-build controls. D-pad movement is for Fairblox 3D runtime only."

@@ -2259,6 +2259,32 @@ select {
   align-content: start;
 }
 
+.runtime-prompt-card,
+.runtime-sidecard {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: rgba(255,255,255,0.04);
+}
+
+.runtime-prompt-card {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.runtime-prompt-label {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.runtime-prompt-card strong {
+  font-size: 0.98rem;
+  line-height: 1.35;
+}
+
 .runtime-stage-head {
   display: flex;
   justify-content: space-between;
@@ -2444,6 +2470,79 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+}
+
+.runtime-roster {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.runtime-roster-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.7rem 0.8rem;
+  border-radius: 14px;
+  background: var(--runtime-roster-accent, rgba(255,255,255,0.04));
+  color: #fff;
+}
+
+.runtime-roster-row strong {
+  font-size: 0.9rem;
+}
+
+.runtime-roster-row span:last-child,
+.runtime-roster-rank {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.runtime-chat-feed {
+  display: grid;
+  gap: 0.55rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.runtime-chat-row {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.65rem 0.72rem;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.04);
+}
+
+.runtime-chat-row strong {
+  font-size: 0.78rem;
+}
+
+.runtime-chat-row span {
+  color: #dbe7f7;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.runtime-chat-row-me {
+  background: rgba(79,209,197,0.12);
+  border: 1px solid rgba(79,209,197,0.18);
+}
+
+.runtime-chat-row-system {
+  background: rgba(192,132,252,0.12);
+  border: 1px solid rgba(192,132,252,0.18);
+}
+
+.runtime-chat-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.runtime-chat-form input {
+  min-width: 0;
 }
 
 .legend-swatch {
