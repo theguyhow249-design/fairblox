@@ -3191,6 +3191,11 @@ export function App() {
                 Fairblox is the browser-first platform for playable worlds, UGC avatars, marketplace items, and creator publishing.
                 Play instantly, build in Studio, and ship updates without a desktop client.
               </p>
+              <div className="public-home-kicker">
+                <span>Instant web play</span>
+                <span>Creator-first tools</span>
+                <span>Installable PWA</span>
+              </div>
               <div className="home-hero-actions">
                 <button type="button" onClick={() => setActiveView("discover")}>Explore worlds</button>
                 <button type="button" className="secondary" onClick={() => setActiveView("creator")}>Open Studio preview</button>
@@ -3235,6 +3240,11 @@ export function App() {
                     <strong>{heroGame.title}</strong>
                     <span>by {heroGame.creatorName}</span>
                     <p>{heroGame.description || "A featured world showing the current Fairblox gameplay style."}</p>
+                    <div className="spotlight-stat-row">
+                      <span className="spotlight-stat">{heroGame.visits.toLocaleString()} visits</span>
+                      <span className="spotlight-stat">{heroGame.likes.toLocaleString()} likes</span>
+                      <span className="spotlight-stat">{heroGame.genre}</span>
+                    </div>
                     <div className="home-banner-actions">
                       <button type="button" onClick={() => openPublicGame(heroGame.slug, "home")}>View game</button>
                       <button type="button" className="secondary" onClick={() => void joinPublicGameBySlug(heroGame.slug)}>Play now</button>
@@ -3289,6 +3299,24 @@ export function App() {
                 </article>
               ))}
             </div>
+          </section>
+
+          <section className="home-flow-grid">
+            <article className="feature-box home-flow-card">
+              <span className="home-flow-step">01</span>
+              <strong>Jump into a world</strong>
+              <p className="hint">Discover pages, featured cards, and one-click play keep the first session fast.</p>
+            </article>
+            <article className="feature-box home-flow-card">
+              <span className="home-flow-step">02</span>
+              <strong>Customize your identity</strong>
+              <p className="hint">Wallet, inventory, and avatar items all feed the same account state.</p>
+            </article>
+            <article className="feature-box home-flow-card">
+              <span className="home-flow-step">03</span>
+              <strong>Open Studio and publish</strong>
+              <p className="hint">Move from playing to building without switching platforms or installing heavy tools.</p>
+            </article>
           </section>
 
           <section className="split-rails public-summary-grid">
