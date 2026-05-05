@@ -424,6 +424,23 @@ select {
   gap: 0.6rem;
 }
 
+.studio-project-block {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  display: grid;
+  gap: 0.9rem;
+}
+
+.studio-project-block h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.studio-project-summary {
+  margin-bottom: 1rem;
+}
+
 .draft-item {
   display: flex;
   flex-wrap: wrap;

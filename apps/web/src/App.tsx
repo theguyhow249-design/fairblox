@@ -30,6 +30,11 @@ import type {
   ProfileSummary,
   CreateMarketplaceTradeRequest,
   SignupRequest,
+  CreateWorldProjectRequest,
+  WorldProject,
+  WorldProjectResponse,
+  WorldProjectSummary,
+  WorldProjectsResponse,
 } from "@fairblox/types";
 const RuntimePlaza = lazy(() =>
   import("./RuntimePlaza").then((module) => ({ default: module.RuntimePlaza })),
@@ -50,6 +55,10 @@ type MyGamesResponse = {
 type GameDraftResponse = {
   game: GameDraftDetail;
 };
+
+type StudioProjectResponse = WorldProjectResponse;
+
+type StudioProjectsListResponse = WorldProjectsResponse;
 
 type PublicGameResponse = {
   game: GameCard | PublishedGameDetail;
@@ -959,6 +968,8 @@ export function App() {
   const [activeView, setActiveView] = useState<AppView>("home");
   const [myGames, setMyGames] = useState<GameDraft[]>([]);
   const [selectedGame, setSelectedGame] = useState<GameDraftDetail | null>(null);
+  const [studioProjects, setStudioProjects] = useState<WorldProjectSummary[]>([]);
+  const [selectedStudioProject, setSelectedStudioProject] = useState<WorldProject | null>(null);
   const [selectedPublicGame, setSelectedPublicGame] = useState<PublishedGameDetail | GameCard | null>(null);
   const [activeSession, setActiveSession] = useState<GameSessionSummary | null>(null);
   const [runtimePosition, setRuntimePosition] = useState<{ x: number; y: number; z: number } | null>(null);
@@ -1024,6 +1035,12 @@ export function App() {
     description: "",
     genre: "obby",
   });
+  const [studioProjectForm, setStudioProjectForm] = useState<CreateWorldProjectRequest>({
+    title: "",
+    description: "",
+    template: "open-world",
+  });
+  const [studioProjectError, setStudioProjectError] = useState<string>("");
   const [platformBrush, setPlatformBrush] = useState<PlatformBrush>({
     count: 6,
     spacing: 8,
@@ -1792,6 +1809,27 @@ export function App() {
 
   useEffect(() => {
     if (!sessionToken) {
+      setStudioProjects([]);
+      setSelectedStudioProject(null);
+      return;
+    }
+    void fetch(`${API_BASE}/studio/projects`, {
+      headers: {
+        "x-session-token": sessionToken,
+      },
+    })
+      .then((response) => response.json() as Promise<StudioProjectsListResponse | ApiError>)
+      .then((data) => {
+        if ("error" in data) {
+          throw new Error(data.error);
+        }
+        setStudioProjects(data.projects);
+      })
+      .catch(() => setStudioProjects([]));
+  }, [sessionToken]);
+
+  useEffect(() => {
+    if (!sessionToken) {
       const defaultSlots = createDefaultAvatarSlots();
       setWalletCoins(0);
       setOwnedItemIds(["builder-cap"]);
@@ -1962,6 +2000,80 @@ export function App() {
       })
       .catch((error: unknown) => {
         setEditorMessage(error instanceof Error ? error.message : "Could not open draft");
+      });
+  }
+
+  function openStudioProject(projectId: string) {
+    if (!sessionToken) {
+      return;
+    }
+    setStudioProjectError("");
+    void fetch(`${API_BASE}/studio/projects/${projectId}`, {
+      headers: {
+        "x-session-token": sessionToken,
+      },
+    })
+      .then((response) => response.json() as Promise<StudioProjectResponse | ApiError>)
+      .then((data) => {
+        if ("error" in data) {
+          throw new Error(data.error);
+        }
+        setSelectedStudioProject(data.project);
+        setActiveView("creator");
+      })
+      .catch((error: unknown) => {
+        setStudioProjectError(error instanceof Error ? error.message : "Could not open world project");
+      });
+  }
+
+  function handleCreateStudioProject(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!sessionToken) {
+      setStudioProjectError("You must be logged in.");
+      return;
+    }
+    setStudioProjectError("");
+    void fetch(`${API_BASE}/studio/projects`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-session-token": sessionToken,
+      },
+      body: JSON.stringify(studioProjectForm),
+    })
+      .then(async (response) => {
+        const data = (await response.json()) as StudioProjectResponse | ApiError;
+        if (!response.ok || "error" in data) {
+          throw new Error("error" in data ? data.error : "Could not create world project");
+        }
+        setSelectedStudioProject(data.project);
+        setStudioProjects((current) => [
+          {
+            id: data.project.id,
+            title: data.project.title,
+            slug: data.project.slug,
+            description: data.project.description,
+            template: data.project.template,
+            visibility: data.project.visibility,
+            creatorId: data.project.creatorId,
+            creatorName: data.project.creatorName,
+            unityWebglUrl: data.project.unityWebglUrl,
+            publishedVersionNumber: data.project.publishedVersionNumber,
+            chunkCount: data.project.chunkCount,
+            createdAt: data.project.createdAt,
+            updatedAt: data.project.updatedAt,
+          },
+          ...current,
+        ]);
+        setStudioProjectForm({
+          title: "",
+          description: "",
+          template: "open-world",
+        });
+        pushToast("Studio world project created.", "success");
+      })
+      .catch((error: unknown) => {
+        setStudioProjectError(error instanceof Error ? error.message : "Could not create world project");
       });
   }
 
@@ -2676,6 +2788,8 @@ export function App() {
     setActiveView("discover");
     setMyGames([]);
     setSelectedGame(null);
+    setStudioProjects([]);
+    setSelectedStudioProject(null);
     setSelectedPublicGame(null);
     setActiveSession(null);
     setRuntimePosition(null);
@@ -5133,6 +5247,52 @@ export function App() {
                   ))
                 )}
               </div>
+              <div className="studio-project-block">
+                <h3>Studio World Projects</h3>
+                <form className="draft-form" onSubmit={handleCreateStudioProject}>
+                  <input
+                    placeholder="World project title"
+                    value={studioProjectForm.title}
+                    onChange={(event) => setStudioProjectForm((current) => ({ ...current, title: event.target.value }))}
+                  />
+                  <input
+                    placeholder="Short world description"
+                    value={studioProjectForm.description}
+                    onChange={(event) => setStudioProjectForm((current) => ({ ...current, description: event.target.value }))}
+                  />
+                  <select
+                    value={studioProjectForm.template}
+                    onChange={(event) =>
+                      setStudioProjectForm((current) => ({
+                        ...current,
+                        template: event.target.value as CreateWorldProjectRequest["template"],
+                      }))
+                    }
+                  >
+                    <option value="open-world">Open World</option>
+                    <option value="social-hub">Social Hub</option>
+                    <option value="adventure">Adventure</option>
+                    <option value="blank">Blank</option>
+                  </select>
+                  <button type="submit">Create world project</button>
+                </form>
+                {studioProjectError ? <p className="error">{studioProjectError}</p> : null}
+                <div className="draft-list">
+                  {studioProjects.length === 0 ? (
+                    <p className="hint">No Studio world projects yet.</p>
+                  ) : (
+                    studioProjects.map((project) => (
+                      <button className="draft-item" key={project.id} type="button" onClick={() => openStudioProject(project.id)}>
+                        <strong>{project.title}</strong>
+                        <span>{project.template}</span>
+                        <span>{project.visibility}</span>
+                        <span>{project.chunkCount} chunk(s)</span>
+                        <span>/{project.slug}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
             </>
           ) : (
             <p>Log in to create draft games and start the creator flow.</p>
@@ -5140,6 +5300,28 @@ export function App() {
         </div>
         <div className="feature-box">
           <h2>Editor</h2>
+          {selectedStudioProject ? (
+            <div className="draft-form studio-project-summary">
+              <p className="hint">
+                Studio project <strong>{selectedStudioProject.title}</strong> at /{selectedStudioProject.slug}
+              </p>
+              <div className="editor-meta">
+                <span>{selectedStudioProject.template}</span>
+                <span>{selectedStudioProject.visibility}</span>
+                <span>{selectedStudioProject.chunks.length} chunk(s)</span>
+                <span>{selectedStudioProject.regions.length} region(s)</span>
+                <span>{selectedStudioProject.metadata.maxPlayers} max players</span>
+              </div>
+              <p className="hint">
+                Spawn: {selectedStudioProject.metadata.spawn.x}, {selectedStudioProject.metadata.spawn.y},{" "}
+                {selectedStudioProject.metadata.spawn.z}
+              </p>
+              <p className="hint">
+                This project is ready for the upcoming Unity Studio client to load, edit terrain, place prefabs, and save
+                streamed chunks back into Fairblox.
+              </p>
+            </div>
+          ) : null}
           {selectedGame ? (
             <div className="draft-form">
               <p className="hint">
