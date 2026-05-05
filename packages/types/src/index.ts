@@ -165,6 +165,138 @@ export interface PublishGameRequest {
   changelog: string;
 }
 
+export type WorldProjectTemplate = "blank" | "social-hub" | "adventure" | "open-world";
+
+export type WorldProjectVisibility = "draft" | "published" | "hidden";
+
+export type WorldTerrainMaterial = "grass" | "dirt" | "rock" | "sand" | "path" | "snow";
+
+export type WorldZoneType =
+  | "portal"
+  | "shop"
+  | "safe"
+  | "quest"
+  | "spawn"
+  | "checkpoint"
+  | "pvp"
+  | "music"
+  | "custom";
+
+export type WorldZoneShape = "box" | "sphere";
+
+export interface WorldEnvironmentSettings {
+  skyColor: string;
+  fogColor?: string;
+  waterLevel?: number;
+  ambientLight?: number;
+  sunHeading?: number;
+}
+
+export interface WorldMetadata {
+  title: string;
+  slug: string;
+  description: string;
+  template: WorldProjectTemplate;
+  maxPlayers: number;
+  spawn: GameVector3;
+  environment: WorldEnvironmentSettings;
+}
+
+export interface WorldTerrainData {
+  heightSeed: number;
+  paintSeed: number;
+  materials: WorldTerrainMaterial[];
+}
+
+export interface WorldObjectData {
+  id: string;
+  prefabId: string;
+  position: GameVector3;
+  rotation: GameRotation3;
+  scale: GameVector3;
+  tags?: string[];
+  config?: Record<string, string | number | boolean>;
+}
+
+export interface WorldZoneData {
+  id: string;
+  type: WorldZoneType | string;
+  shape: WorldZoneShape;
+  position: GameVector3;
+  size: GameVector3;
+  config?: Record<string, string | number | boolean>;
+}
+
+export interface WorldChunkData {
+  id: string;
+  cx: number;
+  cz: number;
+  terrain: WorldTerrainData;
+  objects: WorldObjectData[];
+  zones: WorldZoneData[];
+  checkpoints: GameCheckpoint[];
+  updatedAt: string;
+}
+
+export interface WorldRegionSummary {
+  id: string;
+  name: string;
+  minChunkX: number;
+  maxChunkX: number;
+  minChunkZ: number;
+  maxChunkZ: number;
+}
+
+export interface WorldProjectSummary {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  template: WorldProjectTemplate;
+  visibility: WorldProjectVisibility;
+  creatorId: string;
+  creatorName: string;
+  unityWebglUrl?: string;
+  publishedVersionNumber: number | null;
+  chunkCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorldProject extends WorldProjectSummary {
+  metadata: WorldMetadata;
+  regions: WorldRegionSummary[];
+  chunks: WorldChunkData[];
+}
+
+export interface CreateWorldProjectRequest {
+  title: string;
+  description: string;
+  template?: WorldProjectTemplate;
+}
+
+export interface UpdateWorldProjectRequest {
+  metadata: WorldMetadata;
+  regions: WorldRegionSummary[];
+  unityWebglUrl?: string;
+}
+
+export interface SaveWorldChunkRequest {
+  chunk: WorldChunkData;
+}
+
+export interface PublishWorldProjectRequest {
+  changelog: string;
+}
+
+export interface WorldProjectResponse {
+  project: WorldProject;
+}
+
+export interface WorldProjectsResponse {
+  projects: WorldProjectSummary[];
+}
+
 export interface AccountMessage {
   from: "me" | "friend";
   body: string;

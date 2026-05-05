@@ -6,6 +6,7 @@ import type {
   AccountStateResponse,
   ApiHealthResponse,
   CreateMarketplaceItemRequest,
+  CreateWorldProjectRequest,
   CurrencyPurchaseCheckoutRequest,
   CurrencyPurchaseCheckoutResponse,
   CurrencyPurchaseOrderResponse,
@@ -20,8 +21,11 @@ import type {
   PublishGameRequest,
   SaveAccountStateRequest,
   SaveMapRequest,
+  SaveWorldChunkRequest,
   SignupRequest,
   EconomySummaryResponse,
+  UpdateWorldProjectRequest,
+  PublishWorldProjectRequest,
 } from "@fairblox/types";
 import { createStore } from "./store.js";
 import { featuredGames } from "./data.js";
@@ -636,6 +640,91 @@ app.post("/games", (req, res) => {
       res.status(400).json({
         error: error instanceof Error ? error.message : "Unable to create game draft",
       });
+    });
+});
+
+app.post("/studio/projects", (req, res) => {
+  void store
+    .createWorldProject(String(req.header("x-session-token") || ""), req.body as CreateWorldProjectRequest)
+    .then((project) => {
+      res.status(201).json({ project });
+    })
+    .catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : "Unable to create world project";
+      res.status(/invalid session/i.test(message) ? 401 : 400).json({ error: message });
+    });
+});
+
+app.get("/studio/projects", (req, res) => {
+  void store
+    .listWorldProjectsForToken(String(req.header("x-session-token") || ""))
+    .then((projects) => {
+      res.json({ projects });
+    })
+    .catch((error: unknown) => {
+      res.status(401).json({
+        error: error instanceof Error ? error.message : "Invalid session",
+      });
+    });
+});
+
+app.get("/studio/projects/:id", (req, res) => {
+  void store
+    .getWorldProject(String(req.header("x-session-token") || ""), req.params.id)
+    .then((project) => {
+      res.json({ project });
+    })
+    .catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : "World project not found";
+      res.status(/invalid session/i.test(message) ? 401 : 404).json({ error: message });
+    });
+});
+
+app.put("/studio/projects/:id", (req, res) => {
+  void store
+    .updateWorldProject(
+      String(req.header("x-session-token") || ""),
+      req.params.id,
+      req.body as UpdateWorldProjectRequest,
+    )
+    .then((project) => {
+      res.json({ project });
+    })
+    .catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : "Could not save world project";
+      res.status(/invalid session/i.test(message) ? 401 : 400).json({ error: message });
+    });
+});
+
+app.put("/studio/projects/:id/chunks", (req, res) => {
+  void store
+    .saveWorldChunk(
+      String(req.header("x-session-token") || ""),
+      req.params.id,
+      req.body as SaveWorldChunkRequest,
+    )
+    .then((project) => {
+      res.json({ project });
+    })
+    .catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : "Could not save world chunk";
+      res.status(/invalid session/i.test(message) ? 401 : 400).json({ error: message });
+    });
+});
+
+app.post("/studio/projects/:id/publish", (req, res) => {
+  void store
+    .publishWorldProject(
+      String(req.header("x-session-token") || ""),
+      req.params.id,
+      req.body as PublishWorldProjectRequest,
+    )
+    .then((project) => {
+      res.json({ project });
+    })
+    .catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : "Could not publish world project";
+      res.status(/invalid session/i.test(message) ? 401 : 400).json({ error: message });
     });
 });
 

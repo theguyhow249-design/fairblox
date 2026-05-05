@@ -6,6 +6,7 @@ import type {
   CreateMarketplaceTradeRequest,
   CurrencyPurchaseCheckoutRequest,
   CurrencyPurchaseOrder,
+  CreateWorldProjectRequest,
   EconomySummary,
   CreateGameRequest,
   GameDraft,
@@ -25,7 +26,15 @@ import type {
   SaveMapRequest,
   SaveAccountStateRequest,
   SignupRequest,
+  SaveWorldChunkRequest,
+  UpdateWorldProjectRequest,
   UserRole,
+  WorldChunkData,
+  WorldProject,
+  WorldProjectSummary,
+  WorldProjectTemplate,
+  WorldProjectVisibility,
+  PublishWorldProjectRequest,
 } from "@fairblox/types";
 import { Pool, type PoolClient } from "pg";
 
@@ -52,6 +61,24 @@ type Store = {
   saveGameMap(token: string | undefined, gameId: string, input: SaveMapRequest): Promise<GameDraftDetail>;
   publishGame(token: string | undefined, gameId: string, input: PublishGameRequest): Promise<GameDraftDetail>;
   unpublishGame(token: string | undefined, gameId: string): Promise<GameDraftDetail>;
+  listWorldProjectsForToken(token: string | undefined): Promise<WorldProjectSummary[]>;
+  createWorldProject(token: string | undefined, input: CreateWorldProjectRequest): Promise<WorldProject>;
+  getWorldProject(token: string | undefined, projectId: string): Promise<WorldProject>;
+  updateWorldProject(
+    token: string | undefined,
+    projectId: string,
+    input: UpdateWorldProjectRequest,
+  ): Promise<WorldProject>;
+  saveWorldChunk(
+    token: string | undefined,
+    projectId: string,
+    input: SaveWorldChunkRequest,
+  ): Promise<WorldProject>;
+  publishWorldProject(
+    token: string | undefined,
+    projectId: string,
+    input: PublishWorldProjectRequest,
+  ): Promise<WorldProject>;
   listPublishedGames(): Promise<GameCard[]>;
   listPublishedGamesByCreator(username: string): Promise<GameCard[]>;
   getPublishedGameBySlug(slug: string): Promise<PublishedGameDetail | null>;
@@ -94,6 +121,21 @@ const DEFAULT_MAP_DATA: GameMapData = {
   checkpoints: [],
   objects: [],
 };
+
+const DEFAULT_WORLD_CHUNK = (updatedAt: string): WorldChunkData => ({
+  id: "chunk-0-0",
+  cx: 0,
+  cz: 0,
+  terrain: {
+    heightSeed: 0,
+    paintSeed: 0,
+    materials: ["grass"],
+  },
+  objects: [],
+  zones: [],
+  checkpoints: [],
+  updatedAt,
+});
 
 type StoredMarketplaceItem = MarketplaceItemRecord & {
   creatorUserId: string | null;
@@ -325,6 +367,223 @@ function normalizeMapData(value: GameMapData): GameMapData {
   };
 }
 
+function normalizeWorldProjectTemplate(value: unknown): WorldProjectTemplate {
+  const template = typeof value === "string" ? value.trim() : "";
+  if (template === "social-hub" || template === "adventure" || template === "open-world") {
+    return template;
+  }
+  return "blank";
+}
+
+function normalizeWorldProjectVisibility(value: unknown): WorldProjectVisibility {
+  const visibility = typeof value === "string" ? value.trim() : "";
+  if (visibility === "published" || visibility === "hidden") {
+    return visibility;
+  }
+  return "draft";
+}
+
+function normalizeWorldChunkData(value: WorldChunkData, fallbackIndex: number): WorldChunkData {
+  if (!value || typeof value !== "object") {
+    throw new Error("Chunk payload is required.");
+  }
+  const raw = value as Partial<WorldChunkData>;
+  const updatedAt = new Date().toISOString();
+  const terrain = raw.terrain && typeof raw.terrain === "object" ? raw.terrain : DEFAULT_WORLD_CHUNK(updatedAt).terrain;
+  return {
+    id:
+      typeof raw.id === "string" && raw.id.trim().length > 0
+        ? raw.id.trim().slice(0, 64)
+        : `chunk-${fallbackIndex}`,
+    cx: Number.isFinite(raw.cx) ? Number(raw.cx) : 0,
+    cz: Number.isFinite(raw.cz) ? Number(raw.cz) : 0,
+    terrain: {
+      heightSeed: Number.isFinite(terrain.heightSeed) ? Number(terrain.heightSeed) : 0,
+      paintSeed: Number.isFinite(terrain.paintSeed) ? Number(terrain.paintSeed) : 0,
+      materials: Array.isArray(terrain.materials) && terrain.materials.length > 0
+        ? terrain.materials
+            .filter((item): item is WorldChunkData["terrain"]["materials"][number] => typeof item === "string")
+            .slice(0, 8)
+        : ["grass"],
+    },
+    objects: Array.isArray(raw.objects)
+      ? raw.objects
+          .filter((item) => item && typeof item === "object")
+          .map((item, index) => ({
+            id: typeof item.id === "string" && item.id.trim().length > 0 ? item.id.trim().slice(0, 64) : `object-${index + 1}`,
+            prefabId:
+              typeof item.prefabId === "string" && item.prefabId.trim().length > 0
+                ? item.prefabId.trim().slice(0, 64)
+                : "basic-cube",
+            position: normalizeVector3(item.position, `Chunk object ${index + 1} position`),
+            rotation: normalizeRotation3(item.rotation, `Chunk object ${index + 1} rotation`),
+            scale: normalizeVector3(item.scale, `Chunk object ${index + 1} scale`),
+            tags: Array.isArray(item.tags)
+              ? item.tags
+                  .filter((tag): tag is string => typeof tag === "string" && tag.trim().length > 0)
+                  .map((tag) => tag.trim().slice(0, 32))
+                  .slice(0, 16)
+              : undefined,
+            config:
+              item.config && typeof item.config === "object" && !Array.isArray(item.config)
+                ? Object.fromEntries(
+                    Object.entries(item.config).filter(
+                      ([key, entry]) =>
+                        key.trim().length > 0 &&
+                        (typeof entry === "string" || typeof entry === "number" || typeof entry === "boolean"),
+                    ),
+                  )
+                : undefined,
+          }))
+      : [],
+    zones: Array.isArray(raw.zones)
+      ? raw.zones
+          .filter((item) => item && typeof item === "object")
+          .map((item, index) => ({
+            id: typeof item.id === "string" && item.id.trim().length > 0 ? item.id.trim().slice(0, 64) : `zone-${index + 1}`,
+            type: typeof item.type === "string" && item.type.trim().length > 0 ? item.type.trim().slice(0, 32) : "custom",
+            shape: item.shape === "sphere" ? "sphere" : "box",
+            position: normalizeVector3(item.position, `Chunk zone ${index + 1} position`),
+            size: normalizeVector3(item.size, `Chunk zone ${index + 1} size`),
+            config:
+              item.config && typeof item.config === "object" && !Array.isArray(item.config)
+                ? Object.fromEntries(
+                    Object.entries(item.config).filter(
+                      ([key, entry]) =>
+                        key.trim().length > 0 &&
+                        (typeof entry === "string" || typeof entry === "number" || typeof entry === "boolean"),
+                    ),
+                  )
+                : undefined,
+          }))
+      : [],
+    checkpoints: Array.isArray(raw.checkpoints)
+      ? raw.checkpoints.map((checkpoint, index) => ({
+          id:
+            typeof checkpoint.id === "string" && checkpoint.id.trim().length > 0
+              ? checkpoint.id.trim().slice(0, 64)
+              : `checkpoint-${index + 1}`,
+          position: normalizeVector3(checkpoint.position, `Chunk checkpoint ${index + 1} position`),
+          radius:
+            checkpoint.radius === undefined
+              ? undefined
+              : Number.isFinite(checkpoint.radius) && checkpoint.radius > 0
+                ? Number(checkpoint.radius)
+                : undefined,
+          label:
+            typeof checkpoint.label === "string" && checkpoint.label.trim().length > 0
+              ? checkpoint.label.trim().slice(0, 64)
+              : undefined,
+        }))
+      : [],
+    updatedAt,
+  };
+}
+
+function normalizeWorldProjectUpdate(
+  project: StoredWorldProject,
+  input: UpdateWorldProjectRequest,
+): StoredWorldProject {
+  const title = input.metadata?.title?.trim();
+  if (!title) {
+    throw new Error("World title is required.");
+  }
+  const description = input.metadata?.description?.trim() ?? "";
+  const environment = input.metadata?.environment ?? { skyColor: "#7dd3fc" };
+  return {
+    ...project,
+    title: title.slice(0, 80),
+    description: description.slice(0, 320),
+    template: normalizeWorldProjectTemplate(input.metadata?.template),
+    unityWebglUrl: normalizeUnityWebglUrl(input.unityWebglUrl),
+    metadata: {
+      title: title.slice(0, 80),
+      slug: project.slug,
+      description: description.slice(0, 320),
+      template: normalizeWorldProjectTemplate(input.metadata?.template),
+      maxPlayers: Math.max(1, Math.min(100, Math.floor(Number(input.metadata?.maxPlayers || 12)))),
+      spawn: normalizeVector3(input.metadata?.spawn, "World spawn"),
+      environment: {
+        skyColor:
+          typeof environment.skyColor === "string" && environment.skyColor.trim().length > 0
+            ? environment.skyColor.trim().slice(0, 24)
+            : "#7dd3fc",
+        fogColor:
+          typeof environment.fogColor === "string" && environment.fogColor.trim().length > 0
+            ? environment.fogColor.trim().slice(0, 24)
+            : undefined,
+        waterLevel: Number.isFinite(environment.waterLevel) ? Number(environment.waterLevel) : undefined,
+        ambientLight: Number.isFinite(environment.ambientLight) ? Number(environment.ambientLight) : undefined,
+        sunHeading: Number.isFinite(environment.sunHeading) ? Number(environment.sunHeading) : undefined,
+      },
+    },
+    regions: Array.isArray(input.regions)
+      ? input.regions
+          .filter((region) => region && typeof region.id === "string" && region.id.trim().length > 0)
+          .map((region, index) => ({
+            id: region.id.trim().slice(0, 64),
+            name: String(region.name || `Region ${index + 1}`).trim().slice(0, 80),
+            minChunkX: Math.floor(Number(region.minChunkX || 0)),
+            maxChunkX: Math.floor(Number(region.maxChunkX || 0)),
+            minChunkZ: Math.floor(Number(region.minChunkZ || 0)),
+            maxChunkZ: Math.floor(Number(region.maxChunkZ || 0)),
+          }))
+      : [],
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function createDefaultWorldProject(
+  creatorId: string,
+  creatorName: string,
+  title: string,
+  description: string,
+  template: WorldProjectTemplate,
+  slug: string,
+): StoredWorldProject {
+  const now = new Date().toISOString();
+  return {
+    id: randomUUID(),
+    title,
+    slug,
+    description,
+    template,
+    visibility: "draft",
+    creatorId,
+    creatorName,
+    unityWebglUrl: undefined,
+    publishedVersionNumber: null,
+    chunkCount: 1,
+    createdAt: now,
+    updatedAt: now,
+    metadata: {
+      title,
+      slug,
+      description,
+      template,
+      maxPlayers: 12,
+      spawn: { x: 0, y: 2, z: 0 },
+      environment: {
+        skyColor: "#7dd3fc",
+        fogColor: "#cbd5f5",
+        ambientLight: 0.7,
+        sunHeading: 35,
+      },
+    },
+    regions: [
+      {
+        id: "region-1",
+        name: "Starter Region",
+        minChunkX: 0,
+        maxChunkX: 0,
+        minChunkZ: 0,
+        maxChunkZ: 0,
+      },
+    ],
+    chunks: [DEFAULT_WORLD_CHUNK(now)],
+  };
+}
+
 function normalizeUnityWebglUrl(value: unknown): string | undefined {
   if (typeof value !== "string") {
     return undefined;
@@ -343,6 +602,7 @@ function normalizeUnityWebglUrl(value: unknown): string | undefined {
 }
 
 type StoredGame = GameDraftDetail;
+type StoredWorldProject = WorldProject;
 type StoredVersion = {
   id: string;
   gameId: string;
@@ -612,6 +872,7 @@ class InMemoryStore implements Store {
   private readonly users = new Map<string, StoredUser>();
   private readonly sessions = new Map<string, string>();
   private readonly games = new Map<string, StoredGame>();
+  private readonly worldProjects = new Map<string, StoredWorldProject>();
   private readonly versions = new Map<string, StoredVersion[]>();
   private readonly liveSessions = new Map<string, StoredSession[]>();
   private readonly visitCounts = new Map<string, number>();
@@ -799,6 +1060,116 @@ class InMemoryStore implements Store {
     };
     this.games.set(gameId, updated);
     return updated;
+  }
+
+  async listWorldProjectsForToken(token: string | undefined): Promise<WorldProjectSummary[]> {
+    const profile = await this.getProfileFromToken(token);
+    if (!profile) {
+      throw new Error("Invalid session.");
+    }
+    return [...this.worldProjects.values()]
+      .filter((project) => project.creatorId === profile.id)
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+      .map((project) => ({
+        id: project.id,
+        title: project.title,
+        slug: project.slug,
+        description: project.description,
+        template: project.template,
+        visibility: project.visibility,
+        creatorId: project.creatorId,
+        creatorName: project.creatorName,
+        unityWebglUrl: project.unityWebglUrl,
+        publishedVersionNumber: project.publishedVersionNumber,
+        chunkCount: project.chunks.length,
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
+      }));
+  }
+
+  async createWorldProject(token: string | undefined, input: CreateWorldProjectRequest): Promise<WorldProject> {
+    const profile = await this.getProfileFromToken(token);
+    if (!profile) {
+      throw new Error("Invalid session.");
+    }
+    const title = input.title.trim();
+    if (!title) {
+      throw new Error("World title is required.");
+    }
+    const slug = this.uniqueWorldSlug(slugify(title) || "untitled-world");
+    const project = createDefaultWorldProject(
+      profile.id,
+      profile.displayName,
+      title.slice(0, 80),
+      input.description.trim().slice(0, 320),
+      normalizeWorldProjectTemplate(input.template),
+      slug,
+    );
+    this.worldProjects.set(project.id, project);
+    return structuredClone(project);
+  }
+
+  async getWorldProject(token: string | undefined, projectId: string): Promise<WorldProject> {
+    const profile = await this.getProfileFromToken(token);
+    if (!profile) {
+      throw new Error("Invalid session.");
+    }
+    const project = this.worldProjects.get(projectId);
+    if (!project || project.creatorId !== profile.id) {
+      throw new Error("World project not found.");
+    }
+    return structuredClone(project);
+  }
+
+  async updateWorldProject(
+    token: string | undefined,
+    projectId: string,
+    input: UpdateWorldProjectRequest,
+  ): Promise<WorldProject> {
+    const project = await this.getWorldProject(token, projectId);
+    const updated = normalizeWorldProjectUpdate(project, input);
+    this.worldProjects.set(projectId, updated);
+    return structuredClone(updated);
+  }
+
+  async saveWorldChunk(
+    token: string | undefined,
+    projectId: string,
+    input: SaveWorldChunkRequest,
+  ): Promise<WorldProject> {
+    const project = await this.getWorldProject(token, projectId);
+    const chunk = normalizeWorldChunkData(input.chunk, project.chunks.length);
+    const chunks = [...project.chunks];
+    const existingIndex = chunks.findIndex((entry) => entry.id === chunk.id || (entry.cx === chunk.cx && entry.cz === chunk.cz));
+    if (existingIndex >= 0) {
+      chunks[existingIndex] = chunk;
+    } else {
+      chunks.push(chunk);
+    }
+    const updated: StoredWorldProject = {
+      ...project,
+      chunks,
+      chunkCount: chunks.length,
+      updatedAt: new Date().toISOString(),
+    };
+    this.worldProjects.set(projectId, updated);
+    return structuredClone(updated);
+  }
+
+  async publishWorldProject(
+    token: string | undefined,
+    projectId: string,
+    _input: PublishWorldProjectRequest,
+  ): Promise<WorldProject> {
+    const project = await this.getWorldProject(token, projectId);
+    const updated: StoredWorldProject = {
+      ...project,
+      visibility: "published",
+      publishedVersionNumber: (project.publishedVersionNumber ?? 0) + 1,
+      updatedAt: new Date().toISOString(),
+    };
+    this.worldProjects.set(projectId, updated);
+    return structuredClone(updated);
   }
 
   async listPublishedGames(): Promise<GameCard[]> {
@@ -1342,6 +1713,16 @@ class InMemoryStore implements Store {
     }
     return candidate;
   }
+
+  private uniqueWorldSlug(base: string): string {
+    let candidate = base;
+    let index = 2;
+    while ([...this.worldProjects.values()].some((project) => project.slug === candidate)) {
+      candidate = `${base}-${index}`;
+      index += 1;
+    }
+    return candidate;
+  }
 }
 
 class PostgresStore implements Store {
@@ -1670,6 +2051,173 @@ class PostgresStore implements Store {
       throw new Error("Draft not found.");
     }
     return this.getGameDraft(token, gameId);
+  }
+
+  async listWorldProjectsForToken(token: string | undefined): Promise<WorldProjectSummary[]> {
+    const profile = await this.getProfileFromToken(token);
+    if (!profile) {
+      throw new Error("Invalid session.");
+    }
+    const result = await this.pool.query(
+      `
+      SELECT wp.*, p.display_name AS creator_name
+      FROM world_projects wp
+      JOIN profiles p ON p.user_id = wp.creator_id
+      WHERE wp.creator_id = $1
+      ORDER BY wp.updated_at DESC
+      `,
+      [profile.id],
+    );
+    return result.rows.map((row) => this.mapWorldProjectRow(row, false)) as WorldProjectSummary[];
+  }
+
+  async createWorldProject(token: string | undefined, input: CreateWorldProjectRequest): Promise<WorldProject> {
+    const profile = await this.getProfileFromToken(token);
+    if (!profile) {
+      throw new Error("Invalid session.");
+    }
+    const title = input.title.trim();
+    if (!title) {
+      throw new Error("World title is required.");
+    }
+    const slug = await this.uniqueWorldSlug(slugify(title) || "untitled-world");
+    const project = createDefaultWorldProject(
+      profile.id,
+      profile.displayName,
+      title.slice(0, 80),
+      input.description.trim().slice(0, 320),
+      normalizeWorldProjectTemplate(input.template),
+      slug,
+    );
+    await this.pool.query(
+      `
+      INSERT INTO world_projects (
+        id, creator_id, title, slug, description, template, visibility, unity_webgl_url, metadata_json, regions_json, chunks_json, published_version_number
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, $8, $9, $10, NULL)
+      `,
+      [
+        project.id,
+        project.creatorId,
+        project.title,
+        project.slug,
+        project.description,
+        project.template,
+        project.visibility,
+        JSON.stringify(project.metadata),
+        JSON.stringify(project.regions),
+        JSON.stringify(project.chunks),
+      ],
+    );
+    return project;
+  }
+
+  async getWorldProject(token: string | undefined, projectId: string): Promise<WorldProject> {
+    const profile = await this.getProfileFromToken(token);
+    if (!profile) {
+      throw new Error("Invalid session.");
+    }
+    const result = await this.pool.query(
+      `
+      SELECT wp.*, p.display_name AS creator_name
+      FROM world_projects wp
+      JOIN profiles p ON p.user_id = wp.creator_id
+      WHERE wp.id = $1 AND wp.creator_id = $2
+      LIMIT 1
+      `,
+      [projectId, profile.id],
+    );
+    if (!result.rowCount) {
+      throw new Error("World project not found.");
+    }
+    return this.mapWorldProjectRow(result.rows[0], true) as WorldProject;
+  }
+
+  async updateWorldProject(
+    token: string | undefined,
+    projectId: string,
+    input: UpdateWorldProjectRequest,
+  ): Promise<WorldProject> {
+    const current = await this.getWorldProject(token, projectId);
+    const updated = normalizeWorldProjectUpdate(current, input);
+    const result = await this.pool.query(
+      `
+      UPDATE world_projects
+      SET
+        title = $2,
+        description = $3,
+        template = $4,
+        unity_webgl_url = $5,
+        metadata_json = $6,
+        regions_json = $7,
+        updated_at = NOW()
+      WHERE id = $1
+      `,
+      [
+        projectId,
+        updated.title,
+        updated.description,
+        updated.template,
+        updated.unityWebglUrl ?? null,
+        JSON.stringify(updated.metadata),
+        JSON.stringify(updated.regions),
+      ],
+    );
+    if (!result.rowCount) {
+      throw new Error("World project not found.");
+    }
+    return this.getWorldProject(token, projectId);
+  }
+
+  async saveWorldChunk(
+    token: string | undefined,
+    projectId: string,
+    input: SaveWorldChunkRequest,
+  ): Promise<WorldProject> {
+    const current = await this.getWorldProject(token, projectId);
+    const chunk = normalizeWorldChunkData(input.chunk, current.chunks.length);
+    const chunks = [...current.chunks];
+    const existingIndex = chunks.findIndex((entry) => entry.id === chunk.id || (entry.cx === chunk.cx && entry.cz === chunk.cz));
+    if (existingIndex >= 0) {
+      chunks[existingIndex] = chunk;
+    } else {
+      chunks.push(chunk);
+    }
+    const result = await this.pool.query(
+      `
+      UPDATE world_projects
+      SET chunks_json = $2, updated_at = NOW()
+      WHERE id = $1
+      `,
+      [projectId, JSON.stringify(chunks)],
+    );
+    if (!result.rowCount) {
+      throw new Error("World project not found.");
+    }
+    return this.getWorldProject(token, projectId);
+  }
+
+  async publishWorldProject(
+    token: string | undefined,
+    projectId: string,
+    _input: PublishWorldProjectRequest,
+  ): Promise<WorldProject> {
+    await this.getWorldProject(token, projectId);
+    const result = await this.pool.query(
+      `
+      UPDATE world_projects
+      SET
+        visibility = 'published',
+        published_version_number = COALESCE(published_version_number, 0) + 1,
+        updated_at = NOW()
+      WHERE id = $1
+      `,
+      [projectId],
+    );
+    if (!result.rowCount) {
+      throw new Error("World project not found.");
+    }
+    return this.getWorldProject(token, projectId);
   }
 
   async listPublishedGames(): Promise<GameCard[]> {
@@ -2569,6 +3117,53 @@ class PostgresStore implements Store {
     };
   }
 
+  private mapWorldProjectRow(
+    row: {
+      id: string;
+      creator_id: string;
+      creator_name: string;
+      title: string;
+      slug: string;
+      description: string;
+      template: WorldProjectTemplate;
+      visibility: WorldProjectVisibility;
+      unity_webgl_url: string | null;
+      metadata_json: WorldProject["metadata"];
+      regions_json: WorldProject["regions"];
+      chunks_json: WorldProject["chunks"];
+      published_version_number: number | null;
+      created_at: Date;
+      updated_at: Date;
+    },
+    includeFullProject: boolean,
+  ): WorldProject | WorldProjectSummary {
+    const chunks = Array.isArray(row.chunks_json) ? row.chunks_json : [];
+    const summary: WorldProjectSummary = {
+      id: row.id,
+      title: row.title,
+      slug: row.slug,
+      description: row.description,
+      template: row.template,
+      visibility: normalizeWorldProjectVisibility(row.visibility),
+      creatorId: row.creator_id,
+      creatorName: row.creator_name,
+      unityWebglUrl: row.unity_webgl_url ?? undefined,
+      publishedVersionNumber: row.published_version_number ?? null,
+      chunkCount: chunks.length,
+      createdAt: row.created_at.toISOString(),
+      updatedAt: row.updated_at.toISOString(),
+    };
+    if (!includeFullProject) {
+      return summary;
+    }
+    return {
+      ...summary,
+      metadata: row.metadata_json,
+      regions: Array.isArray(row.regions_json) ? row.regions_json : [],
+      chunks,
+    };
+  }
+
   private mapCurrencyPurchaseOrderRow(row: {
     id: string;
     user_id: string;
@@ -2707,6 +3302,19 @@ class PostgresStore implements Store {
     }
   }
 
+  private async uniqueWorldSlug(base: string): Promise<string> {
+    let candidate = base;
+    let index = 2;
+    while (true) {
+      const existing = await this.pool.query("SELECT 1 FROM world_projects WHERE slug = $1 LIMIT 1", [candidate]);
+      if (!existing.rowCount) {
+        return candidate;
+      }
+      candidate = `${base}-${index}`;
+      index += 1;
+    }
+  }
+
   private async getUserIdFromToken(token: string | undefined): Promise<string> {
     if (!token) {
       throw new Error("Invalid session.");
@@ -2814,6 +3422,26 @@ export async function createStore(): Promise<Store> {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE (user_id, request_id)
+    )
+    `,
+  );
+  await pool.query(
+    `
+    CREATE TABLE IF NOT EXISTS world_projects (
+      id UUID PRIMARY KEY,
+      creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      slug TEXT NOT NULL UNIQUE,
+      description TEXT NOT NULL DEFAULT '',
+      template TEXT NOT NULL DEFAULT 'blank',
+      visibility TEXT NOT NULL DEFAULT 'draft',
+      unity_webgl_url TEXT,
+      metadata_json JSONB NOT NULL,
+      regions_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+      chunks_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+      published_version_number INTEGER,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
     `,
   );
