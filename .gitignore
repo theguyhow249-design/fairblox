@@ -1,0 +1,15 @@
+node_modules/
+apps/*/node_modules/
+packages/*/node_modules/
+
+dist/
+apps/*/dist/
+packages/*/dist/
+
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+.DS_Store
+Thumbs.db

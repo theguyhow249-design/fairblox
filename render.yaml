@@ -3,8 +3,8 @@ services:
     name: fairblox-api
     runtime: node
     rootDir: .
-    buildCommand: npm install --include=dev && npm run build
-    startCommand: npm run start
+    buildCommand: npm ci --include=dev && npm run build -w @fairblox/types && npm run build -w @fairblox/api
+    startCommand: npm run start -w @fairblox/api
     envVars:
       - key: NODE_VERSION
         value: 22
@@ -28,7 +28,7 @@ services:
 staticSites:
   - name: fairblox-web
     rootDir: .
-    buildCommand: npm install --include=dev && npm run build -w @fairblox/web
+    buildCommand: npm ci --include=dev && npm run build -w @fairblox/types && npm run build -w @fairblox/web
     publishPath: apps/web/dist
     envVars:
       - key: NODE_VERSION
