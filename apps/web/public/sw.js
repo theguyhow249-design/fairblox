@@ -1,5 +1,5 @@
-const STATIC_CACHE = "fairblox-static-v1";
-const RUNTIME_CACHE = "fairblox-runtime-v1";
+const STATIC_CACHE = "fairblox-static-v2";
+const RUNTIME_CACHE = "fairblox-runtime-v2";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",

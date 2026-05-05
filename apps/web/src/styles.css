@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&family=Space+Grotesk:wght@500;700&display=swap');
 
 :root {
   color-scheme: dark;
@@ -33,6 +33,20 @@ body {
     linear-gradient(180deg, #09111a 0%, #0b1520 38%, #09111a 100%);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(circle at center, rgba(0,0,0,0.9), transparent 88%);
+  pointer-events: none;
+  opacity: 0.45;
 }
 
 button {
@@ -279,6 +293,7 @@ button.secondary:hover {
 }
 
 .section-head h2 {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
   font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -293,6 +308,7 @@ button.secondary:hover {
 }
 
 h1 {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
   margin: 0.4rem 0 0.8rem;
   font-size: clamp(2.2rem, 4.5vw, 4.4rem);
   font-weight: 900;
@@ -301,11 +317,13 @@ h1 {
 }
 
 h2 {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
 h3 {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
@@ -1059,10 +1077,11 @@ select {
 
 .public-home-copy h2 {
   margin: 0;
-  font-size: clamp(2rem, 4.2vw, 3.4rem);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
+  font-size: clamp(2.35rem, 4.8vw, 4.35rem);
+  line-height: 0.94;
+  letter-spacing: -0.06em;
   max-width: 11ch;
+  text-wrap: balance;
 }
 
 .public-home-metrics {
@@ -1091,6 +1110,36 @@ select {
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.01em;
+}
+
+.presentation-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.presentation-strip-card {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  padding: 1rem 1.05rem;
+  background:
+    linear-gradient(180deg, rgba(18,31,46,0.96) 0%, rgba(10,17,27,0.98) 100%);
+  box-shadow: 0 16px 36px rgba(0,0,0,0.18);
+  display: grid;
+  gap: 0.45rem;
+}
+
+.presentation-strip-label {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.presentation-strip-card strong {
+  font-size: 0.96rem;
+  line-height: 1.4;
 }
 
 .home-row-block {
@@ -1489,7 +1538,7 @@ select {
 }
 
 .public-spotlight-body strong {
-  font-size: 1.2rem;
+  font-size: 1.28rem;
 }
 
 .public-summary-grid {
@@ -2808,6 +2857,10 @@ select {
   }
 
   .home-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .presentation-strip {
     grid-template-columns: 1fr;
   }
 

@@ -3335,6 +3335,21 @@ export function App() {
             </article>
           </section>
 
+          <section className="presentation-strip">
+            <div className="presentation-strip-card">
+              <span className="presentation-strip-label">Built for launch</span>
+              <strong>Public web, mobile install, creator tools, and wallet flow in one stack.</strong>
+            </div>
+            <div className="presentation-strip-card">
+              <span className="presentation-strip-label">Best first demo</span>
+              <strong>Open a world, buy currency, equip an item, then jump into Studio.</strong>
+            </div>
+            <div className="presentation-strip-card">
+              <span className="presentation-strip-label">Current feel</span>
+              <strong>Roblox-inspired product direction with a faster browser-first loop.</strong>
+            </div>
+          </section>
+
           <section className="feature-box home-banner public-home-cta">
             <div>
               <p className="panel-label">Start here</p>
