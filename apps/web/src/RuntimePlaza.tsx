@@ -9,13 +9,20 @@ type RuntimePlazaProps = {
 };
 
 type CrowdBot = {
+  group: THREE.Group;
   body: THREE.Mesh;
   head: THREE.Mesh;
+  leftArm: THREE.Mesh;
+  rightArm: THREE.Mesh;
+  leftLeg: THREE.Mesh;
+  rightLeg: THREE.Mesh;
   marker: THREE.Sprite;
   radius: number;
   angle: number;
   speed: number;
 };
+
+const BOT_NAMES = ["Nova", "Jax", "Lumi", "Pixel", "Kai", "Mira", "Zed", "Echo", "Vega", "Skye"];
 
 function buildNameSprite(label: string, background: string): THREE.Sprite {
   const canvas = document.createElement("canvas");
@@ -59,86 +66,224 @@ export function RuntimePlaza({ mapData, playerPosition, playerCount }: RuntimePl
     }
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#0f223a");
-    scene.fog = new THREE.Fog("#091425", 18, 90);
+    scene.background = new THREE.Color("#20113b");
+    scene.fog = new THREE.Fog("#140f28", 26, 110);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.18;
     container.appendChild(renderer.domElement);
 
-    const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 220);
-    camera.position.set(0, 13, 20);
+    const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 220);
+    camera.position.set(0, 8, 12);
 
-    const hemiLight = new THREE.HemisphereLight("#78ccff", "#194127", 0.68);
+    const hemiLight = new THREE.HemisphereLight("#8dc5ff", "#153a1c", 1.1);
     scene.add(hemiLight);
 
-    const keyLight = new THREE.DirectionalLight("#ffffff", 0.82);
-    keyLight.position.set(12, 16, 8);
+    const keyLight = new THREE.DirectionalLight("#fff2cf", 1.45);
+    keyLight.position.set(12, 20, 10);
     keyLight.castShadow = true;
-    keyLight.shadow.mapSize.set(1024, 1024);
+    keyLight.shadow.mapSize.set(2048, 2048);
+    keyLight.shadow.camera.left = -35;
+    keyLight.shadow.camera.right = 35;
+    keyLight.shadow.camera.top = 35;
+    keyLight.shadow.camera.bottom = -35;
     scene.add(keyLight);
 
-    const rimLight = new THREE.PointLight("#4fd1c5", 1.4, 40, 2);
-    rimLight.position.set(-10, 8, -12);
+    const rimLight = new THREE.PointLight("#5eead4", 2.6, 60, 2);
+    rimLight.position.set(-10, 9, -12);
     scene.add(rimLight);
+
+    const magentaLight = new THREE.PointLight("#c084fc", 2.1, 55, 2);
+    magentaLight.position.set(14, 10, 8);
+    scene.add(magentaLight);
 
     const ground = new THREE.Mesh(
       new THREE.CircleGeometry(26, 64),
-      new THREE.MeshStandardMaterial({ color: "#2ea84d", roughness: 0.92, metalness: 0.08 }),
+      new THREE.MeshStandardMaterial({ color: "#26c151", roughness: 0.9, metalness: 0.05 }),
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
 
+    const plazaBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(16, 17.8, 1.2, 8),
+      new THREE.MeshStandardMaterial({ color: "#7f89c9", roughness: 0.62, metalness: 0.08 }),
+    );
+    plazaBase.position.y = 0.55;
+    plazaBase.receiveShadow = true;
+    scene.add(plazaBase);
+
+    const plazaDeck = new THREE.Mesh(
+      new THREE.CylinderGeometry(14.8, 16.2, 0.24, 8),
+      new THREE.MeshStandardMaterial({ color: "#b5b8f2", roughness: 0.5, metalness: 0.08 }),
+    );
+    plazaDeck.position.y = 1.12;
+    plazaDeck.receiveShadow = true;
+    scene.add(plazaDeck);
+
     const plazaRing = new THREE.Mesh(
-      new THREE.RingGeometry(8, 13.5, 64),
-      new THREE.MeshStandardMaterial({ color: "#5f5cb6", roughness: 0.42, metalness: 0.12 }),
+      new THREE.RingGeometry(6.2, 10.8, 64),
+      new THREE.MeshStandardMaterial({ color: "#5964b6", roughness: 0.4, metalness: 0.12 }),
     );
     plazaRing.rotation.x = -Math.PI / 2;
-    plazaRing.position.y = 0.05;
+    plazaRing.position.y = 1.14;
     scene.add(plazaRing);
 
+    const path = new THREE.Mesh(
+      new THREE.BoxGeometry(12, 0.15, 5),
+      new THREE.MeshStandardMaterial({ color: "#f59e0b", roughness: 0.72, metalness: 0.02 }),
+    );
+    path.position.set(10, 1.18, 13);
+    path.rotation.y = -0.35;
+    path.receiveShadow = true;
+    scene.add(path);
+
+    const fountainBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(3.2, 3.8, 0.9, 24),
+      new THREE.MeshStandardMaterial({ color: "#d4dcff", roughness: 0.34, metalness: 0.1 }),
+    );
+    fountainBase.position.set(0, 1.55, 0);
+    fountainBase.castShadow = true;
+    fountainBase.receiveShadow = true;
+    scene.add(fountainBase);
+
+    const fountainBowl = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.2, 2.9, 0.5, 24),
+      new THREE.MeshStandardMaterial({ color: "#87d6ff", emissive: "#103e59", emissiveIntensity: 0.3, roughness: 0.2, metalness: 0.35 }),
+    );
+    fountainBowl.position.set(0, 2.15, 0);
+    scene.add(fountainBowl);
+
+    const fountainCore = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.45, 0.65, 2.2, 16),
+      new THREE.MeshStandardMaterial({ color: "#f8fafc", roughness: 0.28, metalness: 0.18 }),
+    );
+    fountainCore.position.set(0, 2.9, 0);
+    scene.add(fountainCore);
+
+    const fountainTop = new THREE.Mesh(
+      new THREE.SphereGeometry(0.74, 18, 14),
+      new THREE.MeshStandardMaterial({ color: "#7dd3fc", emissive: "#0c4a6e", emissiveIntensity: 0.55, roughness: 0.18, metalness: 0.28 }),
+    );
+    fountainTop.position.set(0, 4.25, 0);
+    scene.add(fountainTop);
+
+    const shopText = buildNameSprite("SHOP", "rgba(34, 211, 238, 0.92)");
+    shopText.position.set(0, 8.6, -9.6);
+    shopText.scale.set(4.8, 1.7, 1);
+    scene.add(shopText);
+
     const lanternGeometry = new THREE.SphereGeometry(0.42, 16, 12);
+    const poleMaterial = new THREE.MeshStandardMaterial({ color: "#8f9acd", roughness: 0.46, metalness: 0.18 });
+    const poleGeometry = new THREE.CylinderGeometry(0.15, 0.18, 7.6, 10);
+    const poleTopGeometry = new THREE.SphereGeometry(0.22, 10, 8);
+    const wireMaterial = new THREE.MeshStandardMaterial({ color: "#9f6b2f", roughness: 0.88, metalness: 0.04 });
     for (let index = 0; index < 8; index += 1) {
       const angle = (index / 8) * Math.PI * 2;
+      const radius = 13.8;
+      const pole = new THREE.Mesh(poleGeometry, poleMaterial);
+      pole.position.set(Math.cos(angle) * radius, 4.7, Math.sin(angle) * radius);
+      pole.castShadow = true;
+      scene.add(pole);
+      const poleTop = new THREE.Mesh(poleTopGeometry, poleMaterial);
+      poleTop.position.set(Math.cos(angle) * radius, 8.45, Math.sin(angle) * radius);
+      scene.add(poleTop);
       const lantern = new THREE.Mesh(
         lanternGeometry,
         new THREE.MeshStandardMaterial({
           color: index % 2 === 0 ? "#f59e0b" : "#fb7185",
-          emissive: index % 2 === 0 ? "#8f4500" : "#7f1734",
-          emissiveIntensity: 0.9,
+          emissive: index % 2 === 0 ? "#a65402" : "#8f1f4f",
+          emissiveIntensity: 1.4,
         }),
       );
-      lantern.position.set(Math.cos(angle) * 11, 4.8, Math.sin(angle) * 11);
+      lantern.position.set(Math.cos(angle) * 12.3, 7.5, Math.sin(angle) * 12.3);
+      lantern.castShadow = true;
       scene.add(lantern);
+    }
+
+    for (let index = 0; index < 4; index += 1) {
+      const angle = (index / 4) * Math.PI * 2 + Math.PI / 4;
+      const bench = new THREE.Mesh(
+        new THREE.BoxGeometry(2.6, 0.28, 0.9),
+        new THREE.MeshStandardMaterial({ color: "#a16207", roughness: 0.86, metalness: 0.03 }),
+      );
+      bench.position.set(Math.cos(angle) * 9.2, 1.58, Math.sin(angle) * 9.2);
+      bench.lookAt(0, 1.58, 0);
+      bench.castShadow = true;
+      scene.add(bench);
     }
 
     const boothGeometry = new THREE.BoxGeometry(3.4, 2.4, 2.2);
     for (let index = 0; index < 6; index += 1) {
       const angle = (index / 6) * Math.PI * 2;
+      const boothGroup = new THREE.Group();
       const booth = new THREE.Mesh(
         boothGeometry,
         new THREE.MeshStandardMaterial({
           color: index % 2 === 0 ? "#ea580c" : "#0ea5e9",
-          roughness: 0.72,
-          metalness: 0.14,
+          roughness: 0.58,
+          metalness: 0.1,
         }),
       );
       booth.castShadow = true;
-      booth.position.set(Math.cos(angle) * 15.5, 1.2, Math.sin(angle) * 15.5);
-      booth.lookAt(0, 1.2, 0);
-      scene.add(booth);
+      const roof = new THREE.Mesh(
+        new THREE.BoxGeometry(4, 0.36, 2.8),
+        new THREE.MeshStandardMaterial({ color: "#fef3c7", roughness: 0.74, metalness: 0.02 }),
+      );
+      roof.position.y = 1.55;
+      const boothSign = buildNameSprite(index % 2 === 0 ? "UPGRADES" : "CRATES", "rgba(17, 24, 39, 0.88)");
+      boothSign.position.set(0, 2.9, 0);
+      boothSign.scale.set(2.2, 0.86, 1);
+      boothGroup.add(booth, roof, boothSign);
+      boothGroup.position.set(Math.cos(angle) * 15.5, 2.32, Math.sin(angle) * 15.5);
+      boothGroup.lookAt(0, 2.1, 0);
+      scene.add(boothGroup);
     }
 
-    const worldMaterial = new THREE.MeshStandardMaterial({ color: "#9bb2c7", roughness: 0.62, metalness: 0.16 });
+    const trunkGeometry = new THREE.CylinderGeometry(0.22, 0.32, 2.6, 8);
+    const trunkMaterial = new THREE.MeshStandardMaterial({ color: "#6b4b28", roughness: 0.96, metalness: 0.01 });
+    const leafMaterial = new THREE.MeshStandardMaterial({ color: "#3ddc70", roughness: 0.84, metalness: 0.01 });
+    for (let index = 0; index < 14; index += 1) {
+      const angle = (index / 14) * Math.PI * 2;
+      const radius = 20 + (index % 3) * 1.5;
+      const tree = new THREE.Group();
+      const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+      trunk.position.y = 2.3;
+      trunk.castShadow = true;
+      tree.add(trunk);
+      for (let layer = 0; layer < 3; layer += 1) {
+        const leaves = new THREE.Mesh(
+          new THREE.ConeGeometry(1.6 - layer * 0.2, 2.2, 6),
+          leafMaterial,
+        );
+        leaves.position.y = 3.8 + layer * 0.95;
+        leaves.castShadow = true;
+        tree.add(leaves);
+      }
+      tree.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+      scene.add(tree);
+    }
+
     mapData.objects.forEach((object) => {
+      const objectColor = /^#[0-9a-fA-F]{6}$/.test(object.color) ? object.color : "#8aa1b8";
+      const materialTuning = object.material === "neon"
+        ? { roughness: 0.18, metalness: 0.08, emissive: objectColor, emissiveIntensity: 0.22 }
+        : object.material === "metal"
+          ? { roughness: 0.32, metalness: 0.42, emissive: "#000000", emissiveIntensity: 0 }
+          : object.material === "glass"
+            ? { roughness: 0.1, metalness: 0.16, emissive: "#000000", emissiveIntensity: 0, transparent: true, opacity: 0.72 }
+            : object.material === "wood"
+              ? { roughness: 0.84, metalness: 0.04, emissive: "#000000", emissiveIntensity: 0 }
+              : { roughness: 0.58, metalness: 0.1, emissive: "#000000", emissiveIntensity: 0 };
       const block = new THREE.Mesh(
         new THREE.BoxGeometry(object.size.x, object.size.y, object.size.z),
         new THREE.MeshStandardMaterial({
-          color: /^#[0-9a-fA-F]{6}$/.test(object.color) ? object.color : "#8aa1b8",
-          roughness: 0.66,
-          metalness: 0.18,
+          color: objectColor,
+          ...materialTuning,
         }),
       );
       block.position.set(object.position.x, object.position.y + object.size.y / 2, object.position.z);
@@ -172,42 +317,78 @@ export function RuntimePlaza({ mapData, playerPosition, playerCount }: RuntimePl
 
     const playerGroup = new THREE.Group();
     const playerBody = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.55, 1.3, 6, 10),
-      new THREE.MeshStandardMaterial({ color: "#f97316", roughness: 0.44, metalness: 0.06 }),
+      new THREE.BoxGeometry(1.1, 1.45, 0.76),
+      new THREE.MeshStandardMaterial({ color: "#111827", roughness: 0.5, metalness: 0.08 }),
     );
     playerBody.castShadow = true;
     const playerHead = new THREE.Mesh(
-      new THREE.SphereGeometry(0.46, 18, 14),
-      new THREE.MeshStandardMaterial({ color: "#f6c8a2", roughness: 0.4, metalness: 0.05 }),
+      new THREE.SphereGeometry(0.42, 18, 14),
+      new THREE.MeshStandardMaterial({ color: "#c9773f", roughness: 0.42, metalness: 0.03 }),
     );
     playerHead.castShadow = true;
-    playerHead.position.y = 1.35;
+    playerHead.position.y = 1.2;
+    const playerBackpack = new THREE.Mesh(
+      new THREE.BoxGeometry(0.58, 0.72, 0.34),
+      new THREE.MeshStandardMaterial({ color: "#05070d", roughness: 0.46, metalness: 0.08 }),
+    );
+    playerBackpack.position.set(0, 0.12, -0.48);
+    const armGeometry = new THREE.BoxGeometry(0.28, 1.05, 0.28);
+    const legGeometry = new THREE.BoxGeometry(0.32, 0.94, 0.32);
+    const limbMaterial = new THREE.MeshStandardMaterial({ color: "#c9773f", roughness: 0.52, metalness: 0.02 });
+    const playerLeftArm = new THREE.Mesh(armGeometry, limbMaterial);
+    const playerRightArm = new THREE.Mesh(armGeometry, limbMaterial);
+    const playerLeftLeg = new THREE.Mesh(legGeometry, limbMaterial);
+    const playerRightLeg = new THREE.Mesh(legGeometry, limbMaterial);
+    playerLeftArm.position.set(-0.78, 0.05, 0);
+    playerRightArm.position.set(0.78, 0.05, 0);
+    playerLeftLeg.position.set(-0.28, -1.06, 0);
+    playerRightLeg.position.set(0.28, -1.06, 0);
+    playerLeftArm.castShadow = true;
+    playerRightArm.castShadow = true;
+    playerLeftLeg.castShadow = true;
+    playerRightLeg.castShadow = true;
     const youLabel = buildNameSprite("YOU", "rgba(9, 23, 36, 0.9)");
     youLabel.position.set(0, 2.5, 0);
-    playerGroup.add(playerBody, playerHead, youLabel);
+    playerGroup.add(playerBody, playerHead, playerBackpack, playerLeftArm, playerRightArm, playerLeftLeg, playerRightLeg, youLabel);
     scene.add(playerGroup);
 
     const bots: CrowdBot[] = [];
     const botCount = Math.max(4, Math.min(playerCount - 1, 14));
     for (let index = 0; index < botCount; index += 1) {
       const hue = (index * 37) % 360;
+      const group = new THREE.Group();
       const body = new THREE.Mesh(
-        new THREE.CapsuleGeometry(0.42, 1.05, 5, 8),
-        new THREE.MeshStandardMaterial({ color: `hsl(${hue}, 78%, 56%)`, roughness: 0.5, metalness: 0.05 }),
+        new THREE.BoxGeometry(0.9, 1.25, 0.65),
+        new THREE.MeshStandardMaterial({ color: `hsl(${hue}, 78%, 56%)`, roughness: 0.48, metalness: 0.04 }),
       );
       const head = new THREE.Mesh(
-        new THREE.SphereGeometry(0.34, 14, 12),
+        new THREE.SphereGeometry(0.33, 14, 12),
         new THREE.MeshStandardMaterial({ color: "#f4c09a", roughness: 0.36, metalness: 0.06 }),
       );
-      const marker = buildNameSprite(`VIP ${index + 1}`, "rgba(236, 72, 153, 0.85)");
+      const leftArm = new THREE.Mesh(armGeometry, limbMaterial);
+      const rightArm = new THREE.Mesh(armGeometry, limbMaterial);
+      const leftLeg = new THREE.Mesh(legGeometry, limbMaterial);
+      const rightLeg = new THREE.Mesh(legGeometry, limbMaterial);
+      leftArm.position.set(-0.6, 0.02, 0);
+      rightArm.position.set(0.6, 0.02, 0);
+      leftLeg.position.set(-0.2, -0.94, 0);
+      rightLeg.position.set(0.2, -0.94, 0);
+      const marker = buildNameSprite(BOT_NAMES[index % BOT_NAMES.length] ?? `VIP ${index + 1}`, "rgba(236, 72, 153, 0.85)");
       const radius = 5.2 + (index % 4) * 2.2;
       const angle = (index / Math.max(botCount, 1)) * Math.PI * 2;
       const speed = 0.35 + (index % 5) * 0.07;
 
       body.castShadow = true;
       head.castShadow = true;
-      scene.add(body, head, marker);
-      bots.push({ body, head, marker, radius, angle, speed });
+      leftArm.castShadow = true;
+      rightArm.castShadow = true;
+      leftLeg.castShadow = true;
+      rightLeg.castShadow = true;
+      head.position.y = 1.05;
+      marker.position.set(0, 2.42, 0);
+      group.add(body, head, leftArm, rightArm, leftLeg, rightLeg, marker);
+      scene.add(group);
+      bots.push({ group, body, head, leftArm, rightArm, leftLeg, rightLeg, marker, radius, angle, speed });
     }
 
     let rafId = 0;
@@ -233,24 +414,35 @@ export function RuntimePlaza({ mapData, playerPosition, playerCount }: RuntimePl
       elapsedTime += delta;
 
       const nextPosition = playerPositionRef.current;
-      playerGroup.position.set(nextPosition.x, nextPosition.y + 1.05, nextPosition.z);
-      const orbitRadius = 8.5;
-      camera.position.x = nextPosition.x + Math.cos(elapsedTime * 0.22) * orbitRadius;
-      camera.position.z = nextPosition.z + Math.sin(elapsedTime * 0.22) * orbitRadius;
-      camera.position.y = 8.6 + Math.sin(elapsedTime * 0.7) * 0.55;
-      camera.lookAt(nextPosition.x, nextPosition.y + 1.1, nextPosition.z);
+      const stride = Math.sin(elapsedTime * 5.2) * 0.18;
+      playerGroup.position.set(nextPosition.x, nextPosition.y + 2.12, nextPosition.z);
+      playerLeftArm.rotation.x = stride;
+      playerRightArm.rotation.x = -stride;
+      playerLeftLeg.rotation.x = -stride;
+      playerRightLeg.rotation.x = stride;
+      playerGroup.rotation.y = Math.atan2(Math.sin(elapsedTime * 0.18), Math.cos(elapsedTime * 0.18)) * 0.16;
+      camera.position.x += ((nextPosition.x + 0.5) - camera.position.x) * 0.06;
+      camera.position.z += ((nextPosition.z + 9.4) - camera.position.z) * 0.06;
+      camera.position.y += ((nextPosition.y + 7.2) - camera.position.y) * 0.06;
+      camera.lookAt(nextPosition.x, nextPosition.y + 2.35, nextPosition.z - 1.4);
 
       bots.forEach((bot, index) => {
         bot.angle += delta * bot.speed;
-        const wave = Math.sin(elapsedTime * (1.7 + index * 0.08)) * 0.14;
+        const wave = Math.sin(elapsedTime * (1.7 + index * 0.08)) * 0.12;
         const x = Math.cos(bot.angle) * bot.radius;
         const z = Math.sin(bot.angle) * bot.radius;
-        bot.body.position.set(x, 1 + wave, z);
-        bot.head.position.set(x, 2.02 + wave, z);
-        bot.marker.position.set(x, 2.88 + wave, z);
+        const strideWave = Math.sin(elapsedTime * (3.2 + index * 0.16)) * 0.26;
+        bot.group.position.set(x, 2.02 + wave, z);
+        bot.group.rotation.y = Math.atan2(-Math.cos(bot.angle), Math.sin(bot.angle));
+        bot.leftArm.rotation.x = strideWave;
+        bot.rightArm.rotation.x = -strideWave;
+        bot.leftLeg.rotation.x = -strideWave;
+        bot.rightLeg.rotation.x = strideWave;
       });
 
       rimLight.intensity = 1.2 + Math.sin(elapsedTime * 1.8) * 0.3;
+      fountainTop.position.y = 4.25 + Math.sin(elapsedTime * 2.2) * 0.12;
+      shopText.material.rotation = Math.sin(elapsedTime * 0.8) * 0.02;
       renderer.render(scene, camera);
       rafId = window.requestAnimationFrame(animate);
     };

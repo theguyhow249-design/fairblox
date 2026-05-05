@@ -4684,10 +4684,19 @@ export function App() {
                   </div>
                   <div className="runtime-grid">
                     <div className="runtime-stage">
-                      <p className="play-title">Runtime View</p>
-                      <p className="hint">
-                        Position: {runtimePosition.x}, {runtimePosition.y}, {runtimePosition.z}
-                      </p>
+                      <div className="runtime-stage-head">
+                        <div>
+                          <p className="play-title">Live Runtime</p>
+                          <p className="hint">
+                            Session hub preview with live movement, social bots, and world props.
+                          </p>
+                        </div>
+                        <div className="runtime-hud-chips">
+                          <span className="runtime-hud-chip">{selectedPublicGame.title}</span>
+                          <span className="runtime-hud-chip">{activeSession.playerCount} online</span>
+                          <span className="runtime-hud-chip">us-east</span>
+                        </div>
+                      </div>
                       {usingUnityRuntime ? (
                         <>
                           <iframe
