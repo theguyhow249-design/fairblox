@@ -962,6 +962,8 @@ export function App() {
   const [runtimePosition, setRuntimePosition] = useState<{ x: number; y: number; z: number } | null>(null);
   const [runtimeEngine, setRuntimeEngine] = useState<RuntimeEngine>("fairblox-3d");
   const [authError, setAuthError] = useState<string>("");
+  const [sessionRestoreMessage, setSessionRestoreMessage] = useState<string>("");
+  const [isRestoringSession, setIsRestoringSession] = useState<boolean>(Boolean(sessionToken));
   const [gameError, setGameError] = useState<string>("");
   const [editorMessage, setEditorMessage] = useState<string>("");
   const [storeMessage, setStoreMessage] = useState<string>("");
@@ -1354,29 +1356,59 @@ export function App() {
 
   useEffect(() => {
     if (!sessionToken) {
+      setIsRestoringSession(false);
+      setSessionRestoreMessage("");
       return;
     }
-    void fetch(`${API_BASE}/me`, {
-      headers: {
-        "x-session-token": sessionToken,
-      },
-    })
-      .then(async (response) => {
+    let cancelled = false;
+    setIsRestoringSession(true);
+    setSessionRestoreMessage("");
+    const restoreSession = async (attempt: number) => {
+      try {
+        const response = await fetch(`${API_BASE}/me`, {
+          headers: {
+            "x-session-token": sessionToken,
+          },
+        });
         if (!response.ok) {
           const error = (await response.json()) as ApiError;
-          throw new Error(error.error);
+          throw new Error(error.error || "Could not restore session.");
         }
-        return response.json() as Promise<ProfileResponse>;
-      })
-      .then((data) => setProfile(data.profile))
-      .catch(() => {
-        setProfile(null);
-        setSessionToken("");
-        setActiveView("discover");
-        setMyGames([]);
-        setSelectedGame(null);
-        setSelectedPublicGame(null);
-      });
+        const data = await response.json() as ProfileResponse;
+        if (cancelled) {
+          return;
+        }
+        setProfile(data.profile);
+        setIsRestoringSession(false);
+        setSessionRestoreMessage("");
+      } catch (error: unknown) {
+        if (cancelled) {
+          return;
+        }
+        const message = error instanceof Error ? error.message : "Could not restore session.";
+        if (/invalid session/i.test(message)) {
+          signOut();
+          setIsRestoringSession(false);
+          setSessionRestoreMessage("");
+          return;
+        }
+        if (attempt < 2) {
+          setSessionRestoreMessage("Reconnecting to your saved account...");
+          window.setTimeout(() => {
+            if (!cancelled) {
+              void restoreSession(attempt + 1);
+            }
+          }, 1200 * (attempt + 1));
+          return;
+        }
+        setIsRestoringSession(false);
+        setSessionRestoreMessage("Saved session found, but the server is still waking up. Refresh again in a moment.");
+      }
+    };
+    void restoreSession(0);
+    return () => {
+      cancelled = true;
+    };
   }, [sessionToken]);
 
   useEffect(() => {
@@ -1588,6 +1620,8 @@ export function App() {
     const auth = data as AuthResponse;
     setSessionToken(auth.token);
     setProfile(auth.profile);
+    setSessionRestoreMessage("");
+    setIsRestoringSession(false);
     setActiveView("home");
   }
 
@@ -2377,6 +2411,8 @@ export function App() {
   function signOut() {
     setSessionToken("");
     setProfile(null);
+    setSessionRestoreMessage("");
+    setIsRestoringSession(false);
     setActiveView("discover");
     setMyGames([]);
     setSelectedGame(null);
@@ -3097,18 +3133,21 @@ export function App() {
             </>
           ) : (
             <>
-              <p className="eyebrow">Welcome to Fairblox</p>
-              <h1>Play. Build. Publish. Repeat.</h1>
+              <p className="eyebrow">{sessionToken ? "Restoring session" : "Welcome to Fairblox"}</p>
+              <h1>{sessionToken ? "Getting your account back in place." : "Play. Build. Publish. Repeat."}</h1>
               <p className="lede">
-                The browser-first game platform where anyone can ship an obby,
-                minigame, or world — in minutes. Fairer economics. Instant publishing.
+                {sessionToken
+                  ? (sessionRestoreMessage || "We found a saved sign-in and are reconnecting you now.")
+                  : "The browser-first game platform where anyone can ship an obby, minigame, or world — in minutes. Fairer economics. Instant publishing."}
               </p>
-              <div className="hero-actions">
-                <button type="button" onClick={() => setActiveView("discover")}>Create account</button>
-                <button type="button" className="secondary" onClick={() => setActiveView("discover")}>
-                  Browse games
-                </button>
-              </div>
+              {!sessionToken ? (
+                <div className="hero-actions">
+                  <button type="button" onClick={() => setActiveView("discover")}>Create account</button>
+                  <button type="button" className="secondary" onClick={() => setActiveView("discover")}>
+                    Browse games
+                  </button>
+                </div>
+              ) : null}
             </>
           )}
         </div>
@@ -3125,6 +3164,22 @@ export function App() {
                 <span>{profile.avatarPreset} avatar</span>
                 <span>{myGames.length} draft(s)</span>
                 <span>{publishedDrafts} published</span>
+              </div>
+            </>
+          ) : sessionToken ? (
+            <>
+              <p className="panel-label">Saved Sign-In</p>
+              <h2>{isRestoringSession ? "Restoring your account" : "Session saved locally"}</h2>
+              <p className="profile-line">
+                {sessionRestoreMessage || "Your sign-in is stored on this device. If the backend was asleep, it can take a moment to reconnect."}
+              </p>
+              <div className="profile-stats">
+                <span>Saved session token</span>
+                <span>{isRestoringSession ? "Connecting..." : "Waiting for retry"}</span>
+              </div>
+              <div className="hero-actions compact-actions">
+                <button type="button" onClick={() => window.location.reload()}>Retry restore</button>
+                <button type="button" className="secondary" onClick={signOut}>Sign out instead</button>
               </div>
             </>
           ) : (
@@ -3181,7 +3236,7 @@ export function App() {
       </section>
       ) : null}
 
-      {!profile && activeView === "home" ? (
+      {!profile && !sessionToken && activeView === "home" ? (
         <section className="section public-home fade-in">
           <section className="home-hero-strip public-home-strip">
             <div className="public-home-copy">
@@ -3455,12 +3510,17 @@ export function App() {
 
             <div className="home-main">
               <section className="home-hero-strip">
-                <div>
+                <div className="home-hero-copy">
                   <p className="eyebrow">Home</p>
                   <h1>Welcome back, {profile.displayName}.</h1>
                   <p className="lede">
                     Play what your friends are playing, jump into a new world, or open Studio and keep building.
                   </p>
+                  <div className="home-hero-kicker">
+                    <span>{walletCoins} {coinLabel}</span>
+                    <span>{ownedItems.length} owned items</span>
+                    <span>{publishedDrafts} published worlds</span>
+                  </div>
                 </div>
                 {heroGame ? (
                   <div className="home-hero-actions">
@@ -3472,6 +3532,44 @@ export function App() {
                     </button>
                   </div>
                 ) : null}
+              </section>
+
+              <section className="home-dashboard-grid">
+                <article className="feature-box dashboard-card dashboard-card-primary">
+                  <span className="dashboard-card-label">Continue building</span>
+                  <strong>{recentDraft ? recentDraft.title : "Start your first draft"}</strong>
+                  <p className="hint">
+                    {recentDraft
+                      ? `Last pinned studio project with ${recentDraft.versionCount} version(s) and ${recentDraft.visibility} visibility.`
+                      : "Open Studio, choose a template, and publish your first playable world."}
+                  </p>
+                  <div className="home-banner-actions">
+                    <button type="button" onClick={() => recentDraft ? openDraft(recentDraft.id) : setActiveView("creator")}>
+                      {recentDraft ? "Open draft" : "Open Studio"}
+                    </button>
+                    <button type="button" className="secondary" onClick={() => setActiveView("creator")}>Studio tools</button>
+                  </div>
+                </article>
+
+                <article className="feature-box dashboard-card">
+                  <span className="dashboard-card-label">Wallet</span>
+                  <strong>{walletCoins} {coinLabel}</strong>
+                  <p className="hint">Use currency for avatar drops, marketplace items, and creator economy tests.</p>
+                  <div className="dashboard-card-meta">
+                    <span>{COIN_BUNDLES.length} bundles</span>
+                    <span>{ownedItems.length} owned items</span>
+                  </div>
+                </article>
+
+                <article className="feature-box dashboard-card">
+                  <span className="dashboard-card-label">Next move</span>
+                  <strong>{heroGame ? `Play ${heroGame.title}` : "Browse fresh worlds"}</strong>
+                  <p className="hint">Stay in the player loop, or jump back into discover to find another world to test.</p>
+                  <div className="dashboard-card-meta">
+                    <span>{games.length} live worlds</span>
+                    <span>{homeFriends.length} friends online</span>
+                  </div>
+                </article>
               </section>
 
               <section className="home-row-block">
