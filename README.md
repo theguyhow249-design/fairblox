@@ -25,9 +25,9 @@ This starts:
 
 For local frontend env, copy [apps/web/.env.example](/abs/path/c:/Users/thegu/fairblox/apps/web/.env.example) to `apps/web/.env` if you want to override the default API or Unity runtime URLs.
 
-## Unity WebGL Runtime (Optional)
+## Unity WebGL Runtime
 
-Fairblox can run a Unity WebGL build in the game session panel.
+Fairblox can use a Unity WebGL build as the primary live game runtime, while the browser app stays as the surrounding shell for discovery, session flow, wallet, inventory, and creator navigation.
 
 1. Host your Unity WebGL build entry page (for example `index.html`) on a reachable URL.
 2. Set the web app env var before starting Vite:
@@ -37,7 +37,7 @@ $env:VITE_UNITY_WEBGL_URL="https://your-hosted-unity-build.example/index.html"
 npm run dev
 ```
 
-3. Open a game, join a session, then switch engine to **Unity WebGL** in runtime controls.
+3. Open a game and join a session. If a Unity URL is available, Fairblox will prefer Unity automatically and load it inside the runtime shell.
 
 You can also set a Unity URL per draft in the Creator editor. When present, the per-game URL is used first, and `VITE_UNITY_WEBGL_URL` acts as a fallback.
 

@@ -2383,6 +2383,60 @@ select {
   background: #000;
 }
 
+.unity-shell {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+}
+
+.unity-shell-bar,
+.unity-shell-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.unity-shell-copy {
+  margin: 0.2rem 0 0;
+}
+
+.unity-shell-actions {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.unity-shell-frame {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.unity-shell-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  gap: 0.45rem;
+  text-align: center;
+  padding: 1rem;
+  background: linear-gradient(180deg, rgba(7, 11, 22, 0.62) 0%, rgba(7, 11, 22, 0.84) 100%);
+  backdrop-filter: blur(6px);
+}
+
+.unity-shell-overlay strong {
+  font-size: 1rem;
+}
+
+.unity-shell-overlay span,
+.unity-shell-footer span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .runtime-plaza {
   overflow: hidden;
   position: relative;

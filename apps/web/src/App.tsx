@@ -121,6 +121,7 @@ type RuntimeEngine = "fairblox-3d" | "unity-webgl";
 type EditorSelection = { kind: "object" | "checkpoint"; id: string };
 type EditorPlacementMode = "object" | "checkpoint" | null;
 type EditorDragTarget = EditorSelection | null;
+type UnityRuntimeLoadState = "idle" | "loading" | "ready" | "error";
 
 const WORLD_OBJECT_TYPES: Array<GameMapData["objects"][number]["type"]> = [
   "platform",
@@ -970,6 +971,8 @@ export function App() {
   const [runtimeChatDraft, setRuntimeChatDraft] = useState<string>("");
   const [runtimeChatMessages, setRuntimeChatMessages] = useState<Array<{ id: string; name: string; body: string; tone: "me" | "system" | "player" }>>([]);
   const [runtimeEngine, setRuntimeEngine] = useState<RuntimeEngine>("fairblox-3d");
+  const [unityRuntimeLoadState, setUnityRuntimeLoadState] = useState<UnityRuntimeLoadState>("idle");
+  const [unityRuntimeFrameKey, setUnityRuntimeFrameKey] = useState<number>(0);
   const [authError, setAuthError] = useState<string>("");
   const [sessionRestoreMessage, setSessionRestoreMessage] = useState<string>("");
   const [isRestoringSession, setIsRestoringSession] = useState<boolean>(Boolean(sessionToken));
@@ -1148,6 +1151,9 @@ export function App() {
   const runtimeUnityWebglUrl = selectedGameUnityWebglUrl || UNITY_WEBGL_URL;
   const canUseUnityRuntime = runtimeUnityWebglUrl.length > 0;
   const usingUnityRuntime = runtimeEngine === "unity-webgl" && canUseUnityRuntime;
+  const unityRuntimeSrc = usingUnityRuntime && activeSession && selectedPublicGame
+    ? `${runtimeUnityWebglUrl}${runtimeUnityWebglUrl.includes("?") ? "&" : "?"}session=${encodeURIComponent(activeSession.id)}&game=${encodeURIComponent(selectedPublicGame.slug)}&username=${encodeURIComponent(profile?.username ?? "guest")}&displayName=${encodeURIComponent(profile?.displayName ?? "Guest")}&coins=${encodeURIComponent(String(walletCoins))}&shell=fairblox`
+    : "";
   const [avatarAlias, setAvatarAlias] = useState<string>(() => {
     try {
       return localStorage.getItem(`${ECONOMY_SETTINGS_STORAGE_KEY}.avatarAlias`) ?? "Star Builder";
@@ -1527,6 +1533,28 @@ export function App() {
     runtimeJumpVelocityRef.current = 0;
     runtimeOnGroundRef.current = true;
   }, [activeSession?.id]);
+
+  useEffect(() => {
+    if (!activeSession) {
+      setUnityRuntimeLoadState("idle");
+      return;
+    }
+    if (canUseUnityRuntime) {
+      setRuntimeEngine("unity-webgl");
+      setUnityRuntimeLoadState("loading");
+      return;
+    }
+    setRuntimeEngine("fairblox-3d");
+    setUnityRuntimeLoadState("idle");
+  }, [activeSession?.id, canUseUnityRuntime]);
+
+  useEffect(() => {
+    if (!usingUnityRuntime) {
+      setUnityRuntimeLoadState(canUseUnityRuntime ? "idle" : "error");
+      return;
+    }
+    setUnityRuntimeLoadState("loading");
+  }, [canUseUnityRuntime, unityRuntimeFrameKey, usingUnityRuntime, unityRuntimeSrc]);
 
   useEffect(() => {
     if (!activeSession) {
@@ -3315,6 +3343,18 @@ export function App() {
     }
   }
 
+  function reloadUnityRuntime() {
+    setUnityRuntimeFrameKey((current) => current + 1);
+    setUnityRuntimeLoadState("loading");
+  }
+
+  function openUnityRuntimeInWindow() {
+    if (!unityRuntimeSrc) {
+      return;
+    }
+    window.open(unityRuntimeSrc, "_blank", "noopener,noreferrer");
+  }
+
   return (
     <main className="page">
       {/* ── Toast notification stack ── */}
@@ -4979,15 +5019,45 @@ export function App() {
                       </div>
                       {usingUnityRuntime ? (
                         <>
-                          <iframe
-                            className="runtime-world runtime-world-unity"
-                            title={`${selectedPublicGame.title} Unity runtime`}
-                            src={`${runtimeUnityWebglUrl}${runtimeUnityWebglUrl.includes("?") ? "&" : "?"}session=${encodeURIComponent(activeSession.id)}&game=${encodeURIComponent(selectedPublicGame.slug)}`}
-                            allow="fullscreen"
-                          />
-                          <p className="hint">
-                            Unity runtime loaded from {selectedGameUnityWebglUrl ? "this game's settings" : "global WebGL URL"}.
-                          </p>
+                          <div className="unity-shell">
+                            <div className="unity-shell-bar">
+                              <div>
+                                <p className="tool-title">Primary Runtime</p>
+                                <p className="hint unity-shell-copy">
+                                  Unity WebGL is the main live game engine for this world.
+                                </p>
+                              </div>
+                              <div className="unity-shell-actions">
+                                <button type="button" className="secondary" onClick={reloadUnityRuntime}>Reload runtime</button>
+                                <button type="button" className="secondary" onClick={openUnityRuntimeInWindow}>Open in tab</button>
+                              </div>
+                            </div>
+                            <div className="unity-shell-frame">
+                              {unityRuntimeLoadState !== "ready" ? (
+                                <div className="unity-shell-overlay">
+                                  <strong>{unityRuntimeLoadState === "error" ? "Unity runtime failed to load." : "Loading Unity runtime..."}</strong>
+                                  <span>
+                                    {unityRuntimeLoadState === "error"
+                                      ? "Check the hosted WebGL build URL and confirm it allows embedding."
+                                      : "The browser app stays as the shell while the live game boots inside Unity WebGL."}
+                                  </span>
+                                </div>
+                              ) : null}
+                              <iframe
+                                key={unityRuntimeFrameKey}
+                                className="runtime-world runtime-world-unity"
+                                title={`${selectedPublicGame.title} Unity runtime`}
+                                src={unityRuntimeSrc}
+                                allow="fullscreen"
+                                onLoad={() => setUnityRuntimeLoadState("ready")}
+                                onError={() => setUnityRuntimeLoadState("error")}
+                              />
+                            </div>
+                            <div className="unity-shell-footer">
+                              <span>Source: {selectedGameUnityWebglUrl ? "per-game Unity URL" : "global Unity runtime URL"}</span>
+                              <span>Shell passes session, game, and player context through query params.</span>
+                            </div>
+                          </div>
                         </>
                       ) : "mapData" in selectedPublicGame ? (
                         <>
@@ -5039,19 +5109,19 @@ export function App() {
                           className={runtimeEngine === "fairblox-3d" ? "secondary runtime-engine-button runtime-engine-button-active" : "secondary runtime-engine-button"}
                           onClick={() => setRuntimeEngine("fairblox-3d")}
                         >
-                          Fairblox 3D
+                          3D Preview
                         </button>
                         <button
                           type="button"
                           className={runtimeEngine === "unity-webgl" ? "secondary runtime-engine-button runtime-engine-button-active" : "secondary runtime-engine-button"}
                           onClick={() => setRuntimeEngine("unity-webgl")}
                         >
-                          Unity WebGL
+                          Unity Live
                         </button>
                       </div>
                       <p className="hint runtime-engine-status">
-                        Engine: {usingUnityRuntime ? "Unity WebGL" : "Fairblox 3D"}
-                        {!canUseUnityRuntime ? " (set draft Unity URL or VITE_UNITY_WEBGL_URL)" : ""}
+                        Engine: {usingUnityRuntime ? "Unity WebGL live runtime" : "Fairblox 3D preview runtime"}
+                        {!canUseUnityRuntime ? " (set draft Unity URL or VITE_UNITY_WEBGL_URL to make Unity primary)" : ""}
                       </p>
                       <p className="hint">Controls: hold WASD or Arrow keys to move, Space to jump, walk through coins and checkpoints to trigger them.</p>
                       <div className="runtime-dpad">
@@ -5112,8 +5182,8 @@ export function App() {
                       </div>
                       <p className="hint">
                         {usingUnityRuntime
-                          ? "Unity uses in-build controls. D-pad movement is for Fairblox 3D runtime only."
-                          : "Tip: use Quick play from Discover to jump straight into runtime."}
+                          ? "Unity uses in-build controls. The browser app stays around it as the shell for session, social, and economy flow."
+                          : "Tip: use this preview for browser-native iteration, then attach a Unity WebGL URL to make Unity the live runtime."}
                       </p>
                     </div>
                   </div>
@@ -5347,7 +5417,7 @@ export function App() {
                   </p>
                 </div>
                 <div className="tool-section tool-section-compact">
-                  <p className="tool-title">Unity Runtime URL</p>
+                  <p className="tool-title">Unity Live Runtime URL</p>
                   <input
                     type="url"
                     placeholder="https://your-unity-host.example/index.html"
@@ -5359,7 +5429,7 @@ export function App() {
                     }}
                   />
                   {unityRuntimeUrlError ? <p className="error inline-error">{unityRuntimeUrlError}</p> : null}
-                  <p className="hint inline-hint">This URL is stored per game draft and used in Runtime when Unity WebGL is selected.</p>
+                  <p className="hint inline-hint">This URL is stored per game draft and becomes the primary live game runtime inside the Fairblox browser shell.</p>
                 </div>
               </div>
               {editorParsedMap ? (
