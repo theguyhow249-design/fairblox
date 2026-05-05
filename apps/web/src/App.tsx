@@ -3772,140 +3772,55 @@ export function App() {
 
       {profile && activeView === "home" ? (
         <>
-          <section className="section home-layout">
-            <aside className="home-sidebar">
-              <div className="home-profile-card home-profile-card-compact">
-                <div className="home-profile-avatar">{profile.displayName.slice(0, 1).toUpperCase()}</div>
-                <div>
-                  <strong>{profile.displayName}</strong>
-                  <p className="profile-line">@{profile.username}</p>
-                </div>
-              </div>
-              <nav className="home-sidebar-card home-nav-list" aria-label="Home navigation">
-                {homeSidebarLinks.map((link) => (
-                  <button
-                    key={link.label}
-                    type="button"
-                    className={link.label === "Home" ? "home-nav-item home-nav-item-active" : "home-nav-item"}
-                    onClick={() => setActiveView(link.view)}
-                  >
-                    <span className="home-nav-icon">{({Home:'🏠',Profile:'👤',Messages:'💬',Friends:'👥',Avatar:'👗',Inventory:'🎒','Gift Cards':'🎁',Currency:'💰'} as Record<string,string>)[link.label] ?? link.label.slice(0,1)}</span>
-                    <span className="home-nav-text">{link.label}</span>
-                    {link.note ? <span className="home-nav-note">{link.note}</span> : null}
-                  </button>
-                ))}
-              </nav>
-              <div className="home-sidebar-card home-quick-stats">
-                <p className="panel-label">Quick Stats</p>
-                <div className="home-metrics home-metrics-vertical">
-                  <div>
-                    <strong>{profile.coins}</strong>
-                    <span>{coinLabel}</span>
-                  </div>
-                  <div>
-                    <strong>{myGames.length}</strong>
-                    <span>drafts</span>
-                  </div>
-                  <div>
-                    <strong>{publishedDrafts}</strong>
-                    <span>published</span>
-                  </div>
-                </div>
-              </div>
-              <div className="home-sidebar-card">
-                <p className="panel-label">Continue Creating</p>
-                {recentDraft ? (
-                  <button type="button" className="draft-item" onClick={() => openDraft(recentDraft.id)}>
-                    <strong>{recentDraft.title}</strong>
-                    <span>{recentDraft.visibility}</span>
-                    <span>{recentDraft.versionCount} version(s)</span>
-                  </button>
-                ) : (
-                  <p className="hint">Create your first draft to pin studio work here.</p>
-                )}
-              </div>
+          <section className="section rb-shell">
+            <aside className="rb-rail" aria-label="Primary navigation">
+              {[
+                { label: "Home", icon: "🏠", view: "home" as AppView },
+                { label: "Charts", icon: "📊", view: "discover" as AppView },
+                { label: "Avatar", icon: "👤", view: "avatar" as AppView },
+                { label: "Party", icon: "🎉", view: "friends" as AppView },
+                { label: "More", icon: "⋯", view: "profile" as AppView },
+              ].map((entry) => (
+                <button
+                  key={`rb-rail-${entry.label}`}
+                  type="button"
+                  className={activeView === entry.view ? "rb-rail-item rb-rail-item-active" : "rb-rail-item"}
+                  onClick={() => setActiveView(entry.view)}
+                >
+                  <span className="rb-rail-icon">{entry.icon}</span>
+                  <span className="rb-rail-label">{entry.label}</span>
+                </button>
+              ))}
             </aside>
 
-            <div className="home-main">
-              <section className="home-hero-strip">
-                <div className="home-hero-copy">
-                  <p className="eyebrow">Home</p>
-                  <h1>Welcome back, {profile.displayName}.</h1>
-                  <p className="lede">
-                    Play what your friends are playing, jump into a new world, or open Studio and keep building.
-                  </p>
-                  <div className="home-hero-kicker">
-                    <span>{walletCoins} {coinLabel}</span>
-                    <span>{ownedItems.length} owned items</span>
-                    <span>{publishedDrafts} published worlds</span>
-                  </div>
+            <div className="rb-feed">
+              <header className="rb-feed-header">
+                <div>
+                  <h1 className="rb-feed-title">Home</h1>
+                  <p className="hint">Welcome back, {profile.displayName}. Jump into worlds or keep building.</p>
                 </div>
-                {heroGame ? (
-                  <div className="home-hero-actions">
-                    <button type="button" onClick={() => openPublicGame(heroGame.slug, "home")}>
-                      Open {heroGame.title}
-                    </button>
-                    <button type="button" className="secondary" onClick={() => setActiveView("creator")}>
-                      Open studio
-                    </button>
-                  </div>
-                ) : null}
-              </section>
+                <div className="rb-feed-chips">
+                  <span>{walletCoins} {coinLabel}</span>
+                  <span>{ownedItems.length} owned items</span>
+                  <span>{publishedDrafts} published</span>
+                </div>
+              </header>
 
-              <section className="home-dashboard-grid">
-                <article className="feature-box dashboard-card dashboard-card-primary">
-                  <span className="dashboard-card-label">Continue building</span>
-                  <strong>{recentDraft ? recentDraft.title : "Start your first draft"}</strong>
-                  <p className="hint">
-                    {recentDraft
-                      ? `Last pinned studio project with ${recentDraft.versionCount} version(s) and ${recentDraft.visibility} visibility.`
-                      : "Open Studio, choose a template, and publish your first playable world."}
-                  </p>
-                  <div className="home-banner-actions">
-                    <button type="button" onClick={() => recentDraft ? openDraft(recentDraft.id) : setActiveView("creator")}>
-                      {recentDraft ? "Open draft" : "Open Studio"}
-                    </button>
-                    <button type="button" className="secondary" onClick={() => setActiveView("creator")}>Studio tools</button>
-                  </div>
-                </article>
-
-                <article className="feature-box dashboard-card">
-                  <span className="dashboard-card-label">Wallet</span>
-                  <strong>{walletCoins} {coinLabel}</strong>
-                  <p className="hint">Use currency for avatar drops, marketplace items, and creator economy tests.</p>
-                  <div className="dashboard-card-meta">
-                    <span>{COIN_BUNDLES.length} bundles</span>
-                    <span>{ownedItems.length} owned items</span>
-                  </div>
-                </article>
-
-                <article className="feature-box dashboard-card">
-                  <span className="dashboard-card-label">Next move</span>
-                  <strong>{heroGame ? `Play ${heroGame.title}` : "Browse fresh worlds"}</strong>
-                  <p className="hint">Stay in the player loop, or jump back into discover to find another world to test.</p>
-                  <div className="dashboard-card-meta">
-                    <span>{games.length} live worlds</span>
-                    <span>{homeFriends.length} friends online</span>
-                  </div>
-                </article>
-              </section>
-
-              <section className="home-row-block">
+              <section className="rb-section">
                 <div className="section-head">
                   <h2>Friends ({homeFriends.length})</h2>
                   <button type="button" className="see-all-btn" onClick={() => setActiveView("friends")}>See all</button>
                 </div>
-                <div className="friend-row">
-                  <article className="friend-card friend-card-add clickable" role="button" tabIndex={0} onClick={() => setActiveView("friends")} onKeyDown={(e) => e.key === "Enter" && setActiveView("friends")}>
-                    <div className="friend-avatar friend-avatar-add">+</div>
-                    <strong>Add</strong>
-                    <span>Find friends</span>
+                <div className="rb-friends-row">
+                  <article className="rb-friend-card rb-friend-card-add clickable" role="button" tabIndex={0} onClick={() => setActiveView("friends")} onKeyDown={(e) => e.key === "Enter" && setActiveView("friends")}>
+                    <div className="rb-friend-avatar">+</div>
+                    <strong>Add Friends</strong>
                   </article>
                   {homeFriends.map((friend) => (
-                    <article key={friend.name} className={`friend-card friend-card-${friend.tone}`}>
-                      <div className="friend-avatar-wrap">
-                        <div className="friend-avatar">{friend.name.slice(0, 1)}</div>
-                        <i className="friend-status-dot" />
+                    <article key={`rb-friend-${friend.name}`} className="rb-friend-card">
+                      <div className="rb-friend-avatar-wrap">
+                        <div className={`rb-friend-avatar rb-friend-avatar-${friend.tone}`}>{friend.name.slice(0, 1)}</div>
+                        <i className="rb-friend-status-dot" />
                       </div>
                       <strong>{friend.name}</strong>
                       <span>{friend.status}</span>
@@ -3914,121 +3829,73 @@ export function App() {
                 </div>
               </section>
 
-              <section className="home-banner hero-promo-banner">
-                <div className="hero-promo-copy">
-                  <span className="hero-promo-tag">Featured</span>
-                  <h2>{activeHomeTitle}</h2>
-                  <p>A featured world hand-picked by the Fairblox team. Drop in and see what's possible.</p>
-                  <div className="home-banner-actions">
-                    {heroGame ? (
-                      <button type="button" onClick={() => openPublicGame(heroGame.slug, "home")}>Join</button>
-                    ) : null}
-                    <button type="button" className="secondary" onClick={() => setActiveView("discover")}>See details</button>
-                  </div>
-                </div>
-                <div className="hero-promo-meta">
-                  <span>{heroGame?.genre ?? "obby"}</span>
-                  <span>{heroGame?.visits ?? 0} visits</span>
-                  <span>{heroGame?.likes ?? 0} likes</span>
-                </div>
-              </section>
-
-              <section className="home-row-block">
-                <div className="section-head">
-                  <h2>Continue</h2>
-                  <button type="button" className="see-all-btn" onClick={() => setActiveView("discover")}>See all</button>
-                </div>
-                <div className="home-rail">
-                  {continueRows.map((game) => (
-                    <article className="home-tile clickable" key={`continue-${game.id}`} onClick={() => openPublicGame(game.slug, "home")}>
-                      <div className={`home-tile-thumb thumb-${game.genre}`}>
-                        <span className="thumb-deco" aria-hidden="true">{GENRE_EMOJIS[game.genre] ?? GENRE_EMOJIS.default}</span>
-                        <span className="home-tile-badge">Continue</span>
-                        <span className="thumb-online">● {Math.max(3, Math.floor(game.visits / 80)).toLocaleString()}</span>
-                      </div>
-                      <div className="home-tile-body">
-                        <strong>{game.title}</strong>
-                        <span>by {game.creatorName}</span>
-                        <small>{game.visits} visits</small>
-                        <div className="home-progress">
-                          <div className="home-progress-fill" style={{ width: `${Math.min(92, 24 + game.likes / 24)}%` }} />
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
-
-              <section className="home-row-block">
+              <section className="rb-section">
                 <div className="section-head">
                   <h2>Recommended For You</h2>
                   <button type="button" className="see-all-btn" onClick={() => setActiveView("discover")}>See all</button>
                 </div>
-                <div className="home-rail">
-                  {recommendedRows.map((game) => (
-                    <article className="home-tile clickable" key={`recommended-${game.id}`} onClick={() => openPublicGame(game.slug, "home")}>
-                      <div className={`home-tile-thumb thumb-${game.genre}`}>
+                <div className="rb-game-grid">
+                  {recommendedRows.slice(0, 8).map((game) => (
+                    <article className="rb-game-card clickable" key={`rb-recommended-${game.id}`} onClick={() => openPublicGame(game.slug, "home")}>
+                      <div className={`card-thumb rb-game-thumb thumb-${game.genre}`}>
                         <span className="thumb-deco" aria-hidden="true">{GENRE_EMOJIS[game.genre] ?? GENRE_EMOJIS.default}</span>
-                        <span className="home-tile-badge">Recommended</span>
-                        <span className="thumb-online">● {Math.max(3, Math.floor(game.visits / 80)).toLocaleString()}</span>
+                        <span className="thumb-badge">{game.genre}</span>
                       </div>
-                      <div className="home-tile-body">
+                      <div className="rb-game-body">
                         <strong>{game.title}</strong>
-                        <span>{game.likes} likes</span>
-                        <small>{game.description}</small>
+                        <span>{game.creatorName}</span>
+                        <small>👍 {game.likes.toLocaleString()} rating</small>
                       </div>
                     </article>
                   ))}
                 </div>
               </section>
 
-              <section className="home-row-block split-rails">
-                <div className="feature-box rail-panel">
-                  <div className="section-head">
-                    <h2>Popular</h2>
-                    <button type="button" className="see-all-btn" onClick={() => setActiveView("discover")}>See all</button>
-                  </div>
-                  <div className="stack-list compact-stack">
-                    {popularRows.map((game) => (
-                      <button key={`popular-${game.id}`} type="button" className="draft-item" onClick={() => openPublicGame(game.slug, "home")}>
-                        <strong>{game.title}</strong>
-                        <span>{game.genre}</span>
-                        <span>{game.visits} visits</span>
-                      </button>
-                    ))}
-                  </div>
+              <section className="rb-section">
+                <div className="section-head">
+                  <h2>Continue</h2>
+                  <button type="button" className="see-all-btn" onClick={() => setActiveView("discover")}>See all</button>
                 </div>
-                <div className="feature-box rail-panel">
-                  <div className="section-head">
-                    <h2>Studio Picks</h2>
-                    <button type="button" className="see-all-btn" onClick={() => setActiveView("creator")}>Open Studio</button>
-                  </div>
-                  {creatorRows.length > 0 ? (
-                    <div className="stack-list compact-stack">
-                      {creatorRows.map((game) => (
-                        <button key={`creator-${game.id}`} type="button" className="draft-item" onClick={() => openDraft(game.id)}>
-                          <strong>{game.title}</strong>
-                          <span>{game.visibility}</span>
-                          <span>{game.publishedVersionNumber ? `v${game.publishedVersionNumber}` : "unpublished"}</span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="hint">No drafts yet. Open Create to start building.</p>
-                  )}
+                <div className="rb-continue-row">
+                  {continueRows.map((game) => (
+                    <article className="rb-continue-card clickable" key={`rb-continue-${game.id}`} onClick={() => openPublicGame(game.slug, "home")}>
+                      <div className={`card-thumb rb-continue-thumb thumb-${game.genre}`}>
+                        <span className="thumb-deco" aria-hidden="true">{GENRE_EMOJIS[game.genre] ?? GENRE_EMOJIS.default}</span>
+                      </div>
+                      <div className="rb-continue-body">
+                        <strong>{game.title}</strong>
+                        <small>{game.genre}</small>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               </section>
 
-              <section className="feature-box home-banner">
-                <div>
-                  <p className="panel-label">Ready for more?</p>
-                  <h2>Discover new worlds</h2>
-                  <p className="hint">Browse the full catalog or jump into Studio and start building your own.</p>
-                </div>
-                <div className="home-banner-actions">
-                  <button type="button" onClick={() => setActiveView("discover")}>Browse games</button>
-                  <button type="button" className="secondary" onClick={() => setActiveView("creator")}>Open Studio</button>
-                </div>
+              <section className="rb-bottom-panels">
+                <article className="feature-box rb-summary-card">
+                  <span className="panel-label">Studio</span>
+                  <h2>{recentDraft ? recentDraft.title : "Start your first draft"}</h2>
+                  <p className="hint">
+                    {recentDraft
+                      ? `Continue ${recentDraft.visibility} work and ship the next version.`
+                      : "Build a new world, attach a Unity runtime, and publish it live."}
+                  </p>
+                  <div className="home-banner-actions">
+                    <button type="button" onClick={() => recentDraft ? openDraft(recentDraft.id) : setActiveView("creator")}>
+                      {recentDraft ? "Open draft" : "Open Studio"}
+                    </button>
+                    <button type="button" className="secondary" onClick={() => setActiveView("creator")}>Creator tools</button>
+                  </div>
+                </article>
+                <article className="feature-box rb-summary-card">
+                  <span className="panel-label">Featured</span>
+                  <h2>{activeHomeTitle}</h2>
+                  <p className="hint">Trending now with {heroGame?.visits ?? 0} visits and {heroGame?.likes ?? 0} likes.</p>
+                  <div className="home-banner-actions">
+                    {heroGame ? <button type="button" onClick={() => openPublicGame(heroGame.slug, "home")}>Open world</button> : null}
+                    <button type="button" className="secondary" onClick={() => setActiveView("discover")}>Browse all</button>
+                  </div>
+                </article>
               </section>
             </div>
           </section>

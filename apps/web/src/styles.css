@@ -902,6 +902,203 @@ select {
   align-items: start;
 }
 
+.rb-shell {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.rb-rail {
+  position: sticky;
+  top: 94px;
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.55rem 0.45rem;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(15,18,24,0.98) 0%, rgba(10,13,18,0.98) 100%);
+  box-shadow: 0 18px 38px rgba(0,0,0,0.28);
+}
+
+.rb-rail-item {
+  display: grid;
+  justify-items: center;
+  gap: 0.32rem;
+  padding: 0.7rem 0.35rem;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid transparent;
+}
+
+.rb-rail-item:hover {
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+  transform: none;
+}
+
+.rb-rail-item-active {
+  background: rgba(255,255,255,0.08);
+  color: var(--text);
+  border-color: rgba(255,255,255,0.08);
+}
+
+.rb-rail-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.rb-rail-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.rb-feed {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.rb-feed-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: end;
+}
+
+.rb-feed-title {
+  margin: 0;
+  font-size: 2.1rem;
+  line-height: 1;
+}
+
+.rb-feed-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.rb-feed-chips span {
+  padding: 0.42rem 0.74rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #e6eef9;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.rb-section {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.rb-friends-row,
+.rb-continue-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(116px, 132px);
+  gap: 0.85rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.rb-friend-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  text-align: center;
+}
+
+.rb-friend-avatar-wrap {
+  position: relative;
+}
+
+.rb-friend-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+  background: #232630;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.rb-friend-avatar-mint { background: linear-gradient(135deg, #4fd1c5, #8ff7cf); }
+.rb-friend-avatar-sun { background: linear-gradient(135deg, #f2b84b, #ffd978); }
+.rb-friend-avatar-sky { background: linear-gradient(135deg, #60a5fa, #93c5fd); }
+.rb-friend-avatar-rose { background: linear-gradient(135deg, #fb7185, #f9a8d4); }
+.rb-friend-avatar-violet { background: linear-gradient(135deg, #a78bfa, #ddd6fe); }
+
+.rb-friend-status-dot {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 15px;
+  height: 15px;
+  border-radius: 999px;
+  background: #34d399;
+  border: 3px solid #11141b;
+}
+
+.rb-friend-card strong,
+.rb-game-body strong,
+.rb-continue-body strong {
+  font-size: 0.95rem;
+}
+
+.rb-friend-card span,
+.rb-game-body span,
+.rb-game-body small,
+.rb-continue-body small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.rb-friend-card-add .rb-friend-avatar {
+  font-size: 2.4rem;
+  background: rgba(255,255,255,0.04);
+}
+
+.rb-game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.rb-game-card,
+.rb-continue-card {
+  display: grid;
+  gap: 0.55rem;
+  border-radius: 18px;
+}
+
+.rb-game-thumb,
+.rb-continue-thumb {
+  min-height: 156px;
+  border-radius: 16px;
+}
+
+.rb-game-body,
+.rb-continue-body {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.rb-bottom-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.rb-summary-card {
+  min-height: 190px;
+  background: linear-gradient(180deg, rgba(18,21,29,0.98) 0%, rgba(12,15,21,0.98) 100%);
+}
+
 @media (min-width: 1500px) {
   .grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3147,6 +3344,7 @@ select {
 @media (max-width: 840px) {
   .shell-bar,
   .hero,
+  .rb-shell,
   .home-layout,
   .home-shell,
   .public-home-strip,
@@ -3163,6 +3361,21 @@ select {
   .shell-nav,
   .shell-user {
     justify-content: flex-start;
+  }
+
+  .rb-rail {
+    position: static;
+    grid-auto-flow: column;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .rb-feed-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rb-bottom-panels {
+    grid-template-columns: 1fr;
   }
 
   .shell-search {
