@@ -1,4 +1,4 @@
-import { FormEvent, MouseEvent, Suspense, lazy, useEffect, useState } from "react";
+import { FormEvent, MouseEvent, Suspense, lazy, useEffect, useRef, useState } from "react";
 import type {
   AccountMessageThread,
   AccountState,
@@ -960,6 +960,10 @@ export function App() {
   const [selectedPublicGame, setSelectedPublicGame] = useState<PublishedGameDetail | GameCard | null>(null);
   const [activeSession, setActiveSession] = useState<GameSessionSummary | null>(null);
   const [runtimePosition, setRuntimePosition] = useState<{ x: number; y: number; z: number } | null>(null);
+  const [runtimeFacing, setRuntimeFacing] = useState<number>(0);
+  const [runtimeSessionCoins, setRuntimeSessionCoins] = useState<number>(0);
+  const [runtimeCheckpointLabel, setRuntimeCheckpointLabel] = useState<string | null>(null);
+  const [runtimeCollectedObjectIds, setRuntimeCollectedObjectIds] = useState<string[]>([]);
   const [runtimeEngine, setRuntimeEngine] = useState<RuntimeEngine>("fairblox-3d");
   const [authError, setAuthError] = useState<string>("");
   const [sessionRestoreMessage, setSessionRestoreMessage] = useState<string>("");
@@ -979,6 +983,9 @@ export function App() {
   const [buyingItemId, setBuyingItemId] = useState<string | null>(null);
   const [isBuyingCurrency, setIsBuyingCurrency] = useState<boolean>(false);
   const [isTrading, setIsTrading] = useState<boolean>(false);
+  const runtimeInputRef = useRef({ forward: false, back: false, left: false, right: false });
+  const runtimeJumpVelocityRef = useRef(0);
+  const runtimeOnGroundRef = useRef(true);
 
   function pushToast(message: string, kind: ToastKind = "success") {
     const id = Math.random().toString(36).slice(2);
@@ -1201,6 +1208,10 @@ export function App() {
   const selectedEditorCheckpoint =
     editorParsedMap && editorSelection?.kind === "checkpoint"
       ? editorParsedMap.checkpoints.find((checkpoint) => checkpoint.id === editorSelection.id) ?? null
+      : null;
+  const runtimeMapData =
+    selectedPublicGame && "mapData" in selectedPublicGame
+      ? selectedPublicGame.mapData
       : null;
 
   useEffect(() => {
@@ -1484,6 +1495,24 @@ export function App() {
 
   useEffect(() => {
     if (!activeSession) {
+      runtimeInputRef.current = { forward: false, back: false, left: false, right: false };
+      runtimeJumpVelocityRef.current = 0;
+      runtimeOnGroundRef.current = true;
+      setRuntimeSessionCoins(0);
+      setRuntimeCheckpointLabel(null);
+      setRuntimeCollectedObjectIds([]);
+      return;
+    }
+    setRuntimeFacing(0);
+    setRuntimeSessionCoins(0);
+    setRuntimeCheckpointLabel(null);
+    setRuntimeCollectedObjectIds([]);
+    runtimeJumpVelocityRef.current = 0;
+    runtimeOnGroundRef.current = true;
+  }, [activeSession?.id]);
+
+  useEffect(() => {
+    if (!activeSession) {
       return;
     }
     const onKeyDown = (event: KeyboardEvent) => {
@@ -1497,26 +1526,156 @@ export function App() {
       ) {
         return;
       }
-      if (event.key === "ArrowUp" || event.key.toLowerCase() === "w") {
+      const key = event.key.toLowerCase();
+      if (event.key === "ArrowUp" || key === "w") {
         event.preventDefault();
-        moveRuntime(0, 0, 1);
-      } else if (event.key === "ArrowDown" || event.key.toLowerCase() === "s") {
+        runtimeInputRef.current.forward = true;
+      } else if (event.key === "ArrowDown" || key === "s") {
         event.preventDefault();
-        moveRuntime(0, 0, -1);
-      } else if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
+        runtimeInputRef.current.back = true;
+      } else if (event.key === "ArrowLeft" || key === "a") {
         event.preventDefault();
-        moveRuntime(-1, 0, 0);
-      } else if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
+        runtimeInputRef.current.left = true;
+      } else if (event.key === "ArrowRight" || key === "d") {
         event.preventDefault();
-        moveRuntime(1, 0, 0);
+        runtimeInputRef.current.right = true;
       } else if (event.key === " " || event.code === "Space") {
         event.preventDefault();
-        moveRuntime(0, 1, 0);
+        if (runtimeOnGroundRef.current) {
+          runtimeJumpVelocityRef.current = 6.5;
+          runtimeOnGroundRef.current = false;
+        }
+      }
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      if (event.key === "ArrowUp" || key === "w") {
+        runtimeInputRef.current.forward = false;
+      } else if (event.key === "ArrowDown" || key === "s") {
+        runtimeInputRef.current.back = false;
+      } else if (event.key === "ArrowLeft" || key === "a") {
+        runtimeInputRef.current.left = false;
+      } else if (event.key === "ArrowRight" || key === "d") {
+        runtimeInputRef.current.right = false;
       }
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
   }, [activeSession]);
+
+  useEffect(() => {
+    if (!activeSession || !runtimeMapData) {
+      return;
+    }
+    let frameId = 0;
+    let lastFrame = performance.now();
+    const bounds = getEditorWorldBounds(runtimeMapData);
+    const groundY = runtimeMapData.spawn.y;
+
+    const tick = (now: number) => {
+      const delta = Math.min((now - lastFrame) / 1000, 0.05);
+      lastFrame = now;
+      let nextFacing: number | null = null;
+
+      setRuntimePosition((current) => {
+        if (!current) {
+          return current;
+        }
+        const input = runtimeInputRef.current;
+        let moveX = 0;
+        let moveZ = 0;
+        if (input.forward) moveZ += 1;
+        if (input.back) moveZ -= 1;
+        if (input.left) moveX -= 1;
+        if (input.right) moveX += 1;
+        const magnitude = Math.hypot(moveX, moveZ) || 1;
+        moveX /= magnitude;
+        moveZ /= magnitude;
+        const moveSpeed = 6.2;
+        const nextX = clampSize(current.x + moveX * moveSpeed * delta, bounds.minX + 1.2, bounds.maxX - 1.2);
+        const nextZ = clampSize(current.z + moveZ * moveSpeed * delta, bounds.minZ + 1.2, bounds.maxZ - 1.2);
+        let nextY = current.y;
+        runtimeJumpVelocityRef.current -= 13.5 * delta;
+        nextY += runtimeJumpVelocityRef.current * delta;
+        if (nextY <= groundY) {
+          nextY = groundY;
+          runtimeJumpVelocityRef.current = 0;
+          runtimeOnGroundRef.current = true;
+        }
+        if (Math.abs(moveX) > 0.01 || Math.abs(moveZ) > 0.01) {
+          nextFacing = Math.atan2(moveX, moveZ);
+        }
+        return {
+          x: Number(nextX.toFixed(3)),
+          y: Number(nextY.toFixed(3)),
+          z: Number(nextZ.toFixed(3)),
+        };
+      });
+
+      if (nextFacing !== null) {
+        setRuntimeFacing(nextFacing);
+      }
+      frameId = window.requestAnimationFrame(tick);
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [activeSession, runtimeMapData]);
+
+  useEffect(() => {
+    if (!runtimeMapData || !runtimePosition) {
+      return;
+    }
+    const collectible = runtimeMapData.objects.find((object) => {
+      if (runtimeCollectedObjectIds.includes(object.id)) {
+        return false;
+      }
+      const collectibleType = object.type === "coin" || object.type === "pickup" || object.tags?.includes("collectible");
+      if (!collectibleType) {
+        return false;
+      }
+      const dx = object.position.x - runtimePosition.x;
+      const dz = object.position.z - runtimePosition.z;
+      return Math.hypot(dx, dz) <= Math.max(1.8, Math.max(object.size.x, object.size.z) * 0.65);
+    });
+    if (collectible) {
+      const reward = typeof collectible.config?.reward === "number" ? collectible.config.reward : 1;
+      setRuntimeCollectedObjectIds((current) => [...current, collectible.id]);
+      setRuntimeSessionCoins((current) => current + reward);
+      pushToast(`Collected ${reward} coin${reward === 1 ? "" : "s"}`, "success");
+    }
+
+    const checkpoint = runtimeMapData.checkpoints.find((entry, index) => {
+      const radius = entry.radius ?? 2.4;
+      const dx = entry.position.x - runtimePosition.x;
+      const dz = entry.position.z - runtimePosition.z;
+      if (Math.hypot(dx, dz) > radius) {
+        return false;
+      }
+      const label = entry.label || `Checkpoint ${index + 1}`;
+      if (runtimeCheckpointLabel === label) {
+        return false;
+      }
+      setRuntimeCheckpointLabel(label);
+      setStoreMessage(`Checkpoint reached: ${label}`);
+      return true;
+    });
+    if (!checkpoint) {
+      const nearby = runtimeMapData.checkpoints.some((entry) => {
+        const radius = entry.radius ?? 2.4;
+        const dx = entry.position.x - runtimePosition.x;
+        const dz = entry.position.z - runtimePosition.z;
+        return Math.hypot(dx, dz) <= radius;
+      });
+      if (!nearby) {
+        setRuntimeCheckpointLabel(null);
+      }
+    }
+  }, [runtimeCheckpointLabel, runtimeCollectedObjectIds, runtimeMapData, runtimePosition]);
 
   useEffect(() => {
     if (!sessionToken) {
@@ -2256,11 +2415,18 @@ export function App() {
   }
 
   function moveRuntime(dx: number, dy: number, dz: number) {
+    if (dy > 0 && runtimeOnGroundRef.current) {
+      runtimeJumpVelocityRef.current = 6.5;
+      runtimeOnGroundRef.current = false;
+    }
+    if (dx !== 0 || dz !== 0) {
+      setRuntimeFacing(Math.atan2(dx, dz));
+    }
     setRuntimePosition((current) =>
       current
         ? {
             x: current.x + dx,
-            y: current.y + dy,
+            y: current.y,
             z: current.z + dz,
           }
         : current,
@@ -4695,6 +4861,8 @@ export function App() {
                           <span className="runtime-hud-chip">{selectedPublicGame.title}</span>
                           <span className="runtime-hud-chip">{activeSession.playerCount} online</span>
                           <span className="runtime-hud-chip">us-east</span>
+                          <span className="runtime-hud-chip">{runtimeSessionCoins} session coins</span>
+                          {runtimeCheckpointLabel ? <span className="runtime-hud-chip">checkpoint: {runtimeCheckpointLabel}</span> : null}
                         </div>
                       </div>
                       {usingUnityRuntime ? (
@@ -4713,7 +4881,9 @@ export function App() {
                         <>
                           <Suspense fallback={<p className="hint">Loading Fairblox 3D runtime...</p>}>
                             <RuntimePlaza
+                              collectedObjectIds={runtimeCollectedObjectIds}
                               mapData={selectedPublicGame.mapData}
+                              playerFacing={runtimeFacing}
                               playerPosition={runtimePosition}
                               playerCount={activeSession.playerCount}
                             />
@@ -4753,7 +4923,7 @@ export function App() {
                         Engine: {usingUnityRuntime ? "Unity WebGL" : "Fairblox 3D"}
                         {!canUseUnityRuntime ? " (set draft Unity URL or VITE_UNITY_WEBGL_URL)" : ""}
                       </p>
-                      <p className="hint">Controls: WASD or Arrow keys, Space to jump.</p>
+                      <p className="hint">Controls: hold WASD or Arrow keys to move, Space to jump, walk through coins and checkpoints to trigger them.</p>
                       <div className="runtime-dpad">
                         <button type="button" className="secondary" onClick={() => moveRuntime(0, 0, 1)} disabled={usingUnityRuntime}>Forward</button>
                         <button type="button" className="secondary" onClick={() => moveRuntime(-1, 0, 0)} disabled={usingUnityRuntime}>Left</button>

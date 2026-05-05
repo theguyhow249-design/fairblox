@@ -5,7 +5,9 @@ import * as THREE from "three";
 type RuntimePlazaProps = {
   mapData: GameMapData;
   playerPosition: { x: number; y: number; z: number };
+  playerFacing: number;
   playerCount: number;
+  collectedObjectIds: string[];
 };
 
 type CrowdBot = {
@@ -54,10 +56,12 @@ function buildNameSprite(label: string, background: string): THREE.Sprite {
   return sprite;
 }
 
-export function RuntimePlaza({ mapData, playerPosition, playerCount }: RuntimePlazaProps) {
+export function RuntimePlaza({ mapData, playerPosition, playerFacing, playerCount, collectedObjectIds }: RuntimePlazaProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerPositionRef = useRef(playerPosition);
   playerPositionRef.current = playerPosition;
+  const playerFacingRef = useRef(playerFacing);
+  playerFacingRef.current = playerFacing;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -269,6 +273,9 @@ export function RuntimePlaza({ mapData, playerPosition, playerCount }: RuntimePl
     }
 
     mapData.objects.forEach((object) => {
+      if (collectedObjectIds.includes(object.id)) {
+        return;
+      }
       const objectColor = /^#[0-9a-fA-F]{6}$/.test(object.color) ? object.color : "#8aa1b8";
       const materialTuning = object.material === "neon"
         ? { roughness: 0.18, metalness: 0.08, emissive: objectColor, emissiveIntensity: 0.22 }
@@ -420,7 +427,7 @@ export function RuntimePlaza({ mapData, playerPosition, playerCount }: RuntimePl
       playerRightArm.rotation.x = -stride;
       playerLeftLeg.rotation.x = -stride;
       playerRightLeg.rotation.x = stride;
-      playerGroup.rotation.y = Math.atan2(Math.sin(elapsedTime * 0.18), Math.cos(elapsedTime * 0.18)) * 0.16;
+      playerGroup.rotation.y = playerFacingRef.current;
       camera.position.x += ((nextPosition.x + 0.5) - camera.position.x) * 0.06;
       camera.position.z += ((nextPosition.z + 9.4) - camera.position.z) * 0.06;
       camera.position.y += ((nextPosition.y + 7.2) - camera.position.y) * 0.06;
@@ -469,7 +476,7 @@ export function RuntimePlaza({ mapData, playerPosition, playerCount }: RuntimePl
       });
       renderer.dispose();
     };
-  }, [mapData, playerCount]);
+  }, [collectedObjectIds, mapData, playerCount]);
 
   return <div className="runtime-plaza runtime-world" ref={containerRef} aria-label="3D runtime plaza" />;
 }
