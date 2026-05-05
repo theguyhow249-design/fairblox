@@ -965,6 +965,7 @@ export function App() {
   const [runtimeSessionCoins, setRuntimeSessionCoins] = useState<number>(0);
   const [runtimeCheckpointLabel, setRuntimeCheckpointLabel] = useState<string | null>(null);
   const [runtimeCollectedObjectIds, setRuntimeCollectedObjectIds] = useState<string[]>([]);
+  const [runtimeZone, setRuntimeZone] = useState<"spawn" | "fountain" | "shop" | "portal-obby" | "portal-minigame" | null>(null);
   const [runtimePrompt, setRuntimePrompt] = useState<string | null>(null);
   const [runtimeChatDraft, setRuntimeChatDraft] = useState<string>("");
   const [runtimeChatMessages, setRuntimeChatMessages] = useState<Array<{ id: string; name: string; body: string; tone: "me" | "system" | "player" }>>([]);
@@ -1505,6 +1506,7 @@ export function App() {
       setRuntimeSessionCoins(0);
       setRuntimeCheckpointLabel(null);
       setRuntimeCollectedObjectIds([]);
+      setRuntimeZone(null);
       setRuntimePrompt(null);
       setRuntimeChatDraft("");
       setRuntimeChatMessages([]);
@@ -1514,6 +1516,7 @@ export function App() {
     setRuntimeSessionCoins(0);
     setRuntimeCheckpointLabel(null);
     setRuntimeCollectedObjectIds([]);
+    setRuntimeZone(null);
     setRuntimePrompt("Walk to the fountain, upgrade booths, or collectible pickups.");
     setRuntimeChatDraft("");
     setRuntimeChatMessages([
@@ -1648,6 +1651,8 @@ export function App() {
     const nearCenter = Math.hypot(runtimePosition.x, runtimePosition.z) <= 4.5;
     const nearShop = Math.hypot(runtimePosition.x - 15.5, runtimePosition.z) <= 5.5
       || Math.hypot(runtimePosition.x + 15.5, runtimePosition.z) <= 5.5;
+    const nearObbyPortal = Math.hypot(runtimePosition.x + 10.5, runtimePosition.z - 10.5) <= 3.2;
+    const nearMinigamePortal = Math.hypot(runtimePosition.x - 10.5, runtimePosition.z - 10.5) <= 3.2;
     const collectible = runtimeMapData.objects.find((object) => {
       if (runtimeCollectedObjectIds.includes(object.id)) {
         return false;
@@ -1696,13 +1701,23 @@ export function App() {
       }
     }
     if (!checkpoint && !collectible) {
-      if (nearCenter) {
+      if (nearObbyPortal) {
+        setRuntimeZone("portal-obby");
+        setRuntimePrompt("Obby portal ready. Jump into a checkpoint-heavy course.");
+      } else if (nearMinigamePortal) {
+        setRuntimeZone("portal-minigame");
+        setRuntimePrompt("Minigame portal ready. Queue into a fast social session.");
+      } else if (nearCenter) {
+        setRuntimeZone("fountain");
         setRuntimePrompt("Fountain plaza: social zone and session meetup point.");
       } else if (nearShop) {
+        setRuntimeZone("shop");
         setRuntimePrompt("Upgrade booth nearby. This is where shop and portal prompts should appear.");
       } else if (nearSpawn) {
+        setRuntimeZone("spawn");
         setRuntimePrompt("Spawn zone: good place to regroup after reset.");
       } else {
+        setRuntimeZone(null);
         setRuntimePrompt("Explore the hub, collect pickups, and look for active portals.");
       }
     }
@@ -3274,6 +3289,30 @@ export function App() {
       { id: `${Date.now()}-${Math.random()}`, name: profile?.displayName ?? "You", body, tone: "me" },
     ]);
     setRuntimeChatDraft("");
+  }
+
+  function handleRuntimeZoneAction(action: "shop" | "reset" | "obby" | "minigame") {
+    if (action === "shop") {
+      setActiveView("currency");
+      pushToast("Opening wallet and shop flow.", "info");
+      return;
+    }
+    if (action === "reset" && activeSession) {
+      setRuntimePosition(activeSession.spawn);
+      setRuntimePrompt("Reset to spawn.");
+      return;
+    }
+    if (action === "obby") {
+      setRuntimePosition({ x: -6, y: runtimeMapData?.spawn.y ?? 2, z: 18 });
+      setRuntimePrompt("Entered obby portal lane.");
+      pushToast("Queued into obby portal preview.", "success");
+      return;
+    }
+    if (action === "minigame") {
+      setRuntimePosition({ x: 6, y: runtimeMapData?.spawn.y ?? 2, z: 18 });
+      setRuntimePrompt("Entered minigame portal lane.");
+      pushToast("Queued into minigame portal preview.", "success");
+    }
   }
 
   return (
@@ -4979,6 +5018,20 @@ export function App() {
                       <div className="runtime-prompt-card">
                         <span className="runtime-prompt-label">Live prompt</span>
                         <strong>{runtimePrompt ?? "Explore the hub."}</strong>
+                        <div className="runtime-action-row">
+                          {runtimeZone === "shop" ? (
+                            <button type="button" className="secondary" onClick={() => handleRuntimeZoneAction("shop")}>Open shop</button>
+                          ) : null}
+                          {runtimeZone === "spawn" ? (
+                            <button type="button" className="secondary" onClick={() => handleRuntimeZoneAction("reset")}>Reset here</button>
+                          ) : null}
+                          {runtimeZone === "portal-obby" ? (
+                            <button type="button" className="secondary" onClick={() => handleRuntimeZoneAction("obby")}>Enter obby portal</button>
+                          ) : null}
+                          {runtimeZone === "portal-minigame" ? (
+                            <button type="button" className="secondary" onClick={() => handleRuntimeZoneAction("minigame")}>Enter minigame portal</button>
+                          ) : null}
+                        </div>
                       </div>
                       <div className="runtime-engine-toggle" role="group" aria-label="Runtime engine selection">
                         <button

@@ -146,6 +146,31 @@ export function RuntimePlaza({ mapData, playerPosition, playerFacing, playerCoun
     path.receiveShadow = true;
     scene.add(path);
 
+    const portalPadGeometry = new THREE.CylinderGeometry(1.9, 2.2, 0.24, 28);
+    const obbyPortal = new THREE.Mesh(
+      portalPadGeometry,
+      new THREE.MeshStandardMaterial({ color: "#22d3ee", emissive: "#0e7490", emissiveIntensity: 0.7, roughness: 0.22, metalness: 0.16 }),
+    );
+    obbyPortal.position.set(-10.5, 1.24, 10.5);
+    obbyPortal.castShadow = true;
+    scene.add(obbyPortal);
+    const obbyPortalSign = buildNameSprite("OBBY", "rgba(34, 211, 238, 0.9)");
+    obbyPortalSign.position.set(-10.5, 3.5, 10.5);
+    obbyPortalSign.scale.set(2.5, 0.95, 1);
+    scene.add(obbyPortalSign);
+
+    const minigamePortal = new THREE.Mesh(
+      portalPadGeometry,
+      new THREE.MeshStandardMaterial({ color: "#fb7185", emissive: "#9f1239", emissiveIntensity: 0.7, roughness: 0.22, metalness: 0.16 }),
+    );
+    minigamePortal.position.set(10.5, 1.24, 10.5);
+    minigamePortal.castShadow = true;
+    scene.add(minigamePortal);
+    const minigamePortalSign = buildNameSprite("MINIGAME", "rgba(251, 113, 133, 0.92)");
+    minigamePortalSign.position.set(10.5, 3.5, 10.5);
+    minigamePortalSign.scale.set(3.2, 0.95, 1);
+    scene.add(minigamePortalSign);
+
     const fountainBase = new THREE.Mesh(
       new THREE.CylinderGeometry(3.2, 3.8, 0.9, 24),
       new THREE.MeshStandardMaterial({ color: "#d4dcff", roughness: 0.34, metalness: 0.1 }),

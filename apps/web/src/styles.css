@@ -2272,6 +2272,13 @@ select {
   gap: 0.35rem;
 }
 
+.runtime-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.2rem;
+}
+
 .runtime-prompt-label {
   color: var(--accent);
   font-size: 0.72rem;
