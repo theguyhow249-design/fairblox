@@ -4102,49 +4102,98 @@ export function App() {
           ) : (
             <>
               <p className="panel-label">Auth</p>
-              <div className="auth-grid">
-                <form onSubmit={handleSignup}>
-                  <h2>Sign up</h2>
-                  <input
-                    placeholder="Display name"
-                    value={signupForm.displayName}
-                    onChange={(event) => setSignupForm((current) => ({ ...current, displayName: event.target.value }))}
-                  />
-                  <input
-                    placeholder="Email"
-                    type="email"
-                    value={signupForm.email}
-                    onChange={(event) => setSignupForm((current) => ({ ...current, email: event.target.value }))}
-                  />
-                  <input
-                    placeholder="Username"
-                    value={signupForm.username}
-                    onChange={(event) => setSignupForm((current) => ({ ...current, username: event.target.value }))}
-                  />
-                  <input
-                    placeholder="Password"
-                    type="password"
-                    value={signupForm.password}
-                    onChange={(event) => setSignupForm((current) => ({ ...current, password: event.target.value }))}
-                  />
-                  <button type="submit">Create creator account</button>
-                </form>
-                <form onSubmit={handleLogin}>
-                  <h2>Log in</h2>
-                  <input
-                    placeholder="Email or Username"
-                    value={loginForm.identifier ?? ""}
-                    onChange={(event) => setLoginForm((current) => ({ ...current, identifier: event.target.value }))}
-                  />
-                  <input
-                    placeholder="Password"
-                    type="password"
-                    value={loginForm.password}
-                    onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
-                  />
-                  <button type="submit">Login</button>
-                  <p className="hint">Demo account: plutobuilds / demo123</p>
-                </form>
+              <div className="auth-shell">
+                <div className="auth-shell-copy">
+                  <span className="auth-shell-kicker">Fairblox Access</span>
+                  <h2>Join the platform where worlds, avatars, and UGC items connect.</h2>
+                  <p>
+                    Create an account to publish games, build a real avatar rig, own marketplace items, and launch into live sessions.
+                  </p>
+                  <div className="auth-shell-points">
+                    <div className="auth-shell-point">
+                      <strong>Creator ready</strong>
+                      <span>Draft worlds, publish updates, and prep your future Studio workflow.</span>
+                    </div>
+                    <div className="auth-shell-point">
+                      <strong>Identity first</strong>
+                      <span>Wearable slots, saved outfits, and avatar items stay tied to the same account.</span>
+                    </div>
+                    <div className="auth-shell-point">
+                      <strong>Live runtime</strong>
+                      <span>Move between the web shell and Unity runtime without losing session context.</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="auth-grid">
+                  <form className="auth-card" onSubmit={handleSignup}>
+                    <div className="auth-card-head">
+                      <span className="auth-card-tag">New Account</span>
+                      <h2>Create Account</h2>
+                      <p>Start building, buying, and publishing from one profile.</p>
+                    </div>
+                    <label className="auth-field">
+                      <span>Display name</span>
+                      <input
+                        placeholder="Star Builder"
+                        value={signupForm.displayName}
+                        onChange={(event) => setSignupForm((current) => ({ ...current, displayName: event.target.value }))}
+                      />
+                    </label>
+                    <label className="auth-field">
+                      <span>Email</span>
+                      <input
+                        placeholder="name@example.com"
+                        type="email"
+                        value={signupForm.email}
+                        onChange={(event) => setSignupForm((current) => ({ ...current, email: event.target.value }))}
+                      />
+                    </label>
+                    <label className="auth-field">
+                      <span>Username</span>
+                      <input
+                        placeholder="starbuilder"
+                        value={signupForm.username}
+                        onChange={(event) => setSignupForm((current) => ({ ...current, username: event.target.value }))}
+                      />
+                    </label>
+                    <label className="auth-field">
+                      <span>Password</span>
+                      <input
+                        placeholder="Create a password"
+                        type="password"
+                        value={signupForm.password}
+                        onChange={(event) => setSignupForm((current) => ({ ...current, password: event.target.value }))}
+                      />
+                    </label>
+                    <button type="submit">Create Fairblox account</button>
+                  </form>
+                  <form className="auth-card auth-card-secondary" onSubmit={handleLogin}>
+                    <div className="auth-card-head">
+                      <span className="auth-card-tag">Welcome Back</span>
+                      <h2>Log In</h2>
+                      <p>Pick up where you left off across worlds, inventory, and creator tools.</p>
+                    </div>
+                    <label className="auth-field">
+                      <span>Email or Username</span>
+                      <input
+                        placeholder="name@example.com or starbuilder"
+                        value={loginForm.identifier ?? ""}
+                        onChange={(event) => setLoginForm((current) => ({ ...current, identifier: event.target.value }))}
+                      />
+                    </label>
+                    <label className="auth-field">
+                      <span>Password</span>
+                      <input
+                        placeholder="Enter your password"
+                        type="password"
+                        value={loginForm.password}
+                        onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
+                      />
+                    </label>
+                    <button type="submit">Log in</button>
+                    <p className="auth-demo">Demo account: <strong>plutobuilds</strong> / <strong>demo123</strong></p>
+                  </form>
+                </div>
               </div>
               {authError ? <p className="error">{authError}</p> : null}
             </>

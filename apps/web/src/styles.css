@@ -361,6 +361,143 @@ h3 {
   gap: 0.65rem;
 }
 
+.auth-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.35fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.auth-shell-copy,
+.auth-card {
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 24px;
+  background: #171b20;
+  box-shadow: var(--shadow-card);
+}
+
+.auth-shell-copy {
+  padding: 1.3rem 1.4rem;
+  display: grid;
+  gap: 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(132, 199, 183, 0.08), transparent 36%),
+    linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)),
+    #171b20;
+}
+
+.auth-shell-copy h2 {
+  margin: 0;
+  font-size: clamp(1.7rem, 2.3vw, 2.35rem);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+}
+
+.auth-shell-copy p {
+  margin: 0;
+  color: var(--muted);
+  max-width: 44ch;
+}
+
+.auth-shell-kicker {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  padding: 0.34rem 0.72rem;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 199, 183, 0.18);
+  background: rgba(132, 199, 183, 0.08);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-shell-points {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.auth-shell-point {
+  padding: 0.85rem 0.95rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.02);
+  display: grid;
+  gap: 0.28rem;
+}
+
+.auth-shell-point strong {
+  font-size: 0.88rem;
+}
+
+.auth-shell-point span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.auth-card {
+  padding: 1.15rem;
+  align-content: start;
+}
+
+.auth-card-secondary {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01)),
+    #171b20;
+}
+
+.auth-card-head {
+  display: grid;
+  gap: 0.28rem;
+  margin-bottom: 0.2rem;
+}
+
+.auth-card-head h2 {
+  margin: 0;
+  font-size: 1.45rem;
+  letter-spacing: -0.03em;
+}
+
+.auth-card-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.auth-card-tag {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.auth-field span {
+  color: var(--muted);
+  font-size: 0.77rem;
+  font-weight: 600;
+}
+
+.auth-demo {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.auth-demo strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
 input {
   width: 100%;
   border-radius: 8px;
@@ -3451,6 +3588,7 @@ select {
   .rb-shell,
   .home-layout,
   .home-shell,
+  .auth-shell,
   .public-home-strip,
   .home-spotlight-grid,
   .account-grid-two,
