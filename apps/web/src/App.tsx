@@ -559,6 +559,28 @@ type AvatarRigSlot = {
   rig: AvatarRigDraft;
 };
 
+type UnityAvatarConfig = {
+  displayName: string;
+  motto: string;
+  aura: (typeof AVATAR_AURAS)[number];
+  skinTone: string;
+  shirtColor: string;
+  pantsColor: string;
+  face: string;
+  bodyType: number;
+  heightScale: number;
+  headScale: number;
+  animationStyle: string;
+  wearables: Array<{
+    slot: AvatarWearableSlotKey;
+    itemId: string;
+    itemName: string;
+    modelKind: MarketplaceItem["modelKind"];
+    category: string;
+    emoji: string;
+  }>;
+};
+
 const AVATAR_CATALOG_DEFS: AvatarCatalogDef[] = [
   { id: "skin-pale",     name: "Pale",          emoji: "👤", bg: "#f6c8a2", cat: "Body",        kind: "skin",      val: "#f6c8a2" },
   { id: "skin-light",    name: "Light",         emoji: "👤", bg: "#e5b48d", cat: "Body",        kind: "skin",      val: "#e5b48d" },
@@ -680,6 +702,48 @@ function syncAvatarRigSlots(nextAvatarSlots: AvatarSlot[], existingRigSlots: Ava
       }),
     };
   });
+}
+
+function buildUnityAvatarConfig(input: {
+  alias: string;
+  motto: string;
+  aura: (typeof AVATAR_AURAS)[number];
+  draft: AvatarDraft;
+  rig: AvatarRigDraft;
+  itemsById: Map<string, MarketplaceItem>;
+}): UnityAvatarConfig {
+  const wearables = AVATAR_WEARABLE_SLOTS.flatMap((slot) => {
+    const itemId = input.rig.wearables[slot];
+    if (!itemId) {
+      return [];
+    }
+    const item = input.itemsById.get(itemId);
+    if (!item) {
+      return [];
+    }
+    return [{
+      slot,
+      itemId: item.id,
+      itemName: item.name,
+      modelKind: item.modelKind,
+      category: item.category,
+      emoji: item.emoji,
+    }];
+  });
+  return {
+    displayName: input.alias.trim() || "Player",
+    motto: input.motto.trim(),
+    aura: input.aura,
+    skinTone: input.draft.skinTone,
+    shirtColor: input.draft.shirtColor,
+    pantsColor: input.draft.pantsColor,
+    face: input.draft.face,
+    bodyType: input.rig.bodyType,
+    heightScale: input.rig.heightScale,
+    headScale: input.rig.headScale,
+    animationStyle: input.rig.animationStyle,
+    wearables,
+  };
 }
 
 const AVATAR_PRESETS: Array<{ label: string; draft: AvatarDraft }> = [
@@ -1329,9 +1393,6 @@ export function App() {
   const runtimeUnityWebglUrl = selectedGameUnityWebglUrl || UNITY_WEBGL_URL;
   const canUseUnityRuntime = runtimeUnityWebglUrl.length > 0;
   const usingUnityRuntime = runtimeEngine === "unity-webgl" && canUseUnityRuntime;
-  const unityRuntimeSrc = usingUnityRuntime && activeSession && selectedPublicGame
-    ? `${runtimeUnityWebglUrl}${runtimeUnityWebglUrl.includes("?") ? "&" : "?"}session=${encodeURIComponent(activeSession.id)}&game=${encodeURIComponent(selectedPublicGame.slug)}&username=${encodeURIComponent(profile?.username ?? "guest")}&displayName=${encodeURIComponent(profile?.displayName ?? "Guest")}&coins=${encodeURIComponent(String(walletCoins))}&shell=fairblox`
-    : "";
   const [avatarAlias, setAvatarAlias] = useState<string>(() => {
     try {
       return localStorage.getItem(`${ECONOMY_SETTINGS_STORAGE_KEY}.avatarAlias`) ?? "Star Builder";
@@ -1357,6 +1418,17 @@ export function App() {
       return "None";
     }
   });
+  const unityAvatarConfig = buildUnityAvatarConfig({
+    alias: avatarAlias,
+    motto: avatarMotto,
+    aura: avatarAura,
+    draft: avatarDraft,
+    rig: avatarRigDraft,
+    itemsById: new Map(marketItems.map((item) => [item.id, item])),
+  });
+  const unityRuntimeSrc = usingUnityRuntime && activeSession && selectedPublicGame
+    ? `${runtimeUnityWebglUrl}${runtimeUnityWebglUrl.includes("?") ? "&" : "?"}session=${encodeURIComponent(activeSession.id)}&game=${encodeURIComponent(selectedPublicGame.slug)}&username=${encodeURIComponent(profile?.username ?? "guest")}&displayName=${encodeURIComponent(profile?.displayName ?? "Guest")}&coins=${encodeURIComponent(String(walletCoins))}&shell=fairblox&avatar=${encodeURIComponent(JSON.stringify(unityAvatarConfig))}`
+    : "";
 
   const editorParsedMap = (() => {
     if (!selectedGame) {
@@ -1783,7 +1855,7 @@ export function App() {
       return;
     }
     setUnityRuntimeLoadState("loading");
-  }, [canUseUnityRuntime, unityRuntimeFrameKey, usingUnityRuntime, unityRuntimeSrc]);
+  }, [canUseUnityRuntime, unityRuntimeFrameKey, usingUnityRuntime]);
 
   useEffect(() => {
     if (!activeSession) {
@@ -5456,7 +5528,8 @@ export function App() {
                             </div>
                             <div className="unity-shell-footer">
                               <span>Source: {selectedGameUnityWebglUrl ? "per-game Unity URL" : "global Unity runtime URL"}</span>
-                              <span>Shell passes session, game, and player context through query params.</span>
+                              <span>Shell passes session, game, player, and avatar rig context through query params.</span>
+                              <span>Avatar payload: {unityAvatarConfig.wearables.length} wearable{unityAvatarConfig.wearables.length === 1 ? "" : "s"} · {unityAvatarConfig.animationStyle} · body {unityAvatarConfig.bodyType}%</span>
                             </div>
                           </div>
                         </>
