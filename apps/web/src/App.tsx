@@ -578,6 +578,10 @@ type UnityAvatarConfig = {
     modelKind: MarketplaceItem["modelKind"];
     category: string;
     emoji: string;
+    assetBundleUrl?: string;
+    assetPrefab?: string;
+    assetScale?: number;
+    assetOffset?: { x: number; y: number; z: number };
   }>;
 };
 
@@ -641,7 +645,10 @@ function createEmptyWearables(): AvatarRigDraft["wearables"] {
   };
 }
 
-function getWearableSlotForItem(item: Pick<MarketplaceItem, "category" | "modelKind">): AvatarWearableSlotKey {
+function getWearableSlotForItem(item: Pick<MarketplaceItem, "category" | "modelKind"> & { wearableSlot?: string }): AvatarWearableSlotKey {
+  if (item.wearableSlot && AVATAR_WEARABLE_SLOTS.includes(item.wearableSlot as AvatarWearableSlotKey)) {
+    return item.wearableSlot as AvatarWearableSlotKey;
+  }
   if (item.category === "Back" || item.modelKind === "wings") {
     return "back";
   }
@@ -728,6 +735,10 @@ function buildUnityAvatarConfig(input: {
       modelKind: item.modelKind,
       category: item.category,
       emoji: item.emoji,
+      assetBundleUrl: item.assetBundleUrl,
+      assetPrefab: item.assetPrefab,
+      assetScale: item.assetScale,
+      assetOffset: item.assetOffset,
     }];
   });
   return {
@@ -1197,6 +1208,9 @@ export function App() {
   const [editorMessage, setEditorMessage] = useState<string>("");
   const [storeMessage, setStoreMessage] = useState<string>("");
   const [avatarMessage, setAvatarMessage] = useState<string>("");
+  const [avatarShopSuggestion, setAvatarShopSuggestion] = useState<AvatarCatalogDef | null>(null);
+  const [marketFocusItemId, setMarketFocusItemId] = useState<string | null>(null);
+  const [marketPulseItemId, setMarketPulseItemId] = useState<string | null>(null);
 
   type ToastKind = "success" | "error" | "info";
   type Toast = { id: string; message: string; kind: ToastKind };
@@ -1320,20 +1334,28 @@ export function App() {
     price: number;
     emoji: string;
     modelKind: MarketplaceItem["modelKind"];
+    wearableSlot: NonNullable<MarketplaceItem["wearableSlot"]>;
     description: string;
     limited: boolean;
     supply: number;
     accent: string;
+    assetBundleUrl: string;
+    assetPrefab: string;
+    assetScale: number;
   }>({
     name: "",
     category: "Accessory",
     price: 100,
     emoji: "🎒",
     modelKind: "custom",
+    wearableSlot: "hat",
     description: "",
     limited: false,
     supply: 100,
     accent: "linear-gradient(135deg, #22d3ee, #6366f1)",
+    assetBundleUrl: "",
+    assetPrefab: "",
+    assetScale: 1,
   });
   const [tradeTargetItemId, setTradeTargetItemId] = useState<string>("");
   const [tradeOfferItemId, setTradeOfferItemId] = useState<string>("");
@@ -3163,6 +3185,10 @@ export function App() {
       description: description || "Community-created item.",
       limited: creatorForm.limited,
       supply: creatorForm.limited ? Math.round(creatorForm.supply) : undefined,
+      wearableSlot: creatorForm.wearableSlot,
+      assetBundleUrl: creatorForm.assetBundleUrl.trim() || undefined,
+      assetPrefab: creatorForm.assetPrefab.trim() || undefined,
+      assetScale: creatorForm.assetScale,
     };
     try {
       const response = await fetch(`${API_BASE}/marketplace/items`, {
@@ -3182,7 +3208,18 @@ export function App() {
       setStoreMessage(error instanceof Error ? error.message : "Could not create marketplace item right now.");
       return;
     }
-    setCreatorForm((current) => ({ ...current, name: "", description: "", price: 100, emoji: "🎒", limited: false, supply: 100 }));
+    setCreatorForm((current) => ({
+      ...current,
+      name: "",
+      description: "",
+      price: 100,
+      emoji: "🎒",
+      limited: false,
+      supply: 100,
+      assetBundleUrl: "",
+      assetPrefab: "",
+      assetScale: 1,
+    }));
     setStoreMessage(`${name} listed in the marketplace.`);
     setMarketTab("shop");
   }
@@ -3366,6 +3403,7 @@ export function App() {
     setAvatarDraft(nextDraft);
     setAvatarSlots(nextSlots);
     setAvatarMessage(notice);
+    setAvatarShopSuggestion(null);
     void persistAccountState({ avatarDraft: nextDraft, avatarSlots: nextSlots, activeAvatarSlotId });
   }
 
@@ -3471,7 +3509,20 @@ export function App() {
   }
 
   function openAvatarShopForItem(item: AvatarCatalogDef) {
+    setMarketFocusItemId(item.id);
+    setAvatarShopSuggestion(item);
     setAvatarMessage(`${item.name} is not in your inventory yet. Buy it in the marketplace to equip it.`);
+  }
+
+  function viewAvatarSuggestionInMarketplace() {
+    if (!avatarShopSuggestion) {
+      return;
+    }
+    setMarketFocusItemId(avatarShopSuggestion.id);
+    setMarketTab("shop");
+    setMarketCategory("All");
+    setMarketSearch(avatarShopSuggestion.name);
+    setActiveView("inventory");
   }
 
   
@@ -3799,6 +3850,25 @@ export function App() {
       if (marketSort === "newest") return (b.createdAt ?? 0) - (a.createdAt ?? 0);
       return 0;
     });
+
+  useEffect(() => {
+    if (activeView !== "inventory" || marketTab !== "shop" || !marketFocusItemId) {
+      return;
+    }
+    const targetCard = document.getElementById(`market-item-${marketFocusItemId}`);
+    if (!targetCard) {
+      return;
+    }
+    targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
+    setMarketPulseItemId(marketFocusItemId);
+    const timer = window.setTimeout(() => {
+      setMarketPulseItemId((current) => (current === marketFocusItemId ? null : current));
+    }, 1800);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [activeView, marketTab, marketFocusItemId, filteredMarketItems.length]);
+
   const limitedOwnedItems = ownedItems.filter((item) => item.limited);
   const limitedMarketTargets = allMarketItems.filter((item) => item.limited && !ownedItemIds.includes(item.id));
   const coinLabel = coinName.trim() || "FariBucks";
@@ -4801,7 +4871,16 @@ export function App() {
                           });
                       })()}
                     </div>
-                    {avatarMessage ? <p className="hint" style={{margin:"0 1rem 1rem"}}>{avatarMessage}</p> : null}
+                    {avatarMessage ? (
+                      <div style={{ margin: "0 1rem 1rem", display: "grid", gap: "0.5rem" }}>
+                        <p className="hint" style={{ margin: 0 }}>{avatarMessage}</p>
+                        {avatarShopSuggestion ? (
+                          <button type="button" className="secondary" onClick={viewAvatarSuggestionInMarketplace}>
+                            View in Marketplace
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </section>
@@ -5079,8 +5158,32 @@ export function App() {
                         </select>
                       </label>
                       <label>
+                        Attach slot
+                        <select value={creatorForm.wearableSlot} onChange={(event) => setCreatorForm((current) => ({ ...current, wearableSlot: event.target.value as NonNullable<MarketplaceItem["wearableSlot"]> }))}>
+                          <option value="hat">Hat</option>
+                          <option value="face">Face</option>
+                          <option value="neck">Neck</option>
+                          <option value="shoulder">Shoulder</option>
+                          <option value="back">Back</option>
+                          <option value="waist">Waist</option>
+                          <option value="gear">Gear</option>
+                        </select>
+                      </label>
+                      <label>
                         Card gradient
                         <input value={creatorForm.accent} onChange={(event) => setCreatorForm((current) => ({ ...current, accent: event.target.value }))} placeholder="linear-gradient(135deg, #22d3ee, #6366f1)" />
+                      </label>
+                      <label className="market-creator-wide">
+                        3D asset bundle URL
+                        <input value={creatorForm.assetBundleUrl} onChange={(event) => setCreatorForm((current) => ({ ...current, assetBundleUrl: event.target.value }))} placeholder="https://cdn.fairblox.dev/ugc/nebula-crown.bundle" />
+                      </label>
+                      <label>
+                        Prefab name
+                        <input value={creatorForm.assetPrefab} onChange={(event) => setCreatorForm((current) => ({ ...current, assetPrefab: event.target.value }))} placeholder="NebulaCrown" />
+                      </label>
+                      <label>
+                        3D scale
+                        <input type="number" min={0.1} max={4} step={0.05} value={creatorForm.assetScale} onChange={(event) => setCreatorForm((current) => ({ ...current, assetScale: Number(event.target.value) }))} />
                       </label>
                       <label className="market-creator-wide">
                         Description
@@ -5182,8 +5285,14 @@ export function App() {
                 <div className="market-grid">
                   {filteredMarketItems.map((item) => {
                     const owned = ownedItemIds.includes(item.id);
+                    const isFocused = marketPulseItemId === item.id;
                     return (
-                      <article key={item.id} className={owned ? "market-card market-card-owned" : "market-card"}>
+                      <article
+                        key={item.id}
+                        id={`market-item-${item.id}`}
+                        className={owned ? "market-card market-card-owned" : "market-card"}
+                        style={isFocused ? { outline: "2px solid #22c55e", boxShadow: "0 0 0 4px rgba(34, 197, 94, 0.22)" } : undefined}
+                      >
                         <div className="market-card-art" style={{ background: item.accent }}>
                           <MarketplaceModel kind={item.modelKind} emoji={item.emoji} />
                           {item.limited ? <span className="market-badge market-badge-limited">LIMITED</span> : null}
@@ -5193,6 +5302,8 @@ export function App() {
                         <div className="market-card-body">
                           <strong className="market-card-name">{item.name}</strong>
                           <span className="market-card-creator">By {item.creator}</span>
+                          {item.wearableSlot ? <span className="market-card-creator">Slot: {item.wearableSlot}</span> : null}
+                          {item.assetBundleUrl ? <span className="market-card-creator">3D asset ready</span> : null}
                           {item.limited && item.supply ? <span className="market-card-creator">Supply: {item.supply}</span> : null}
                           <div className="market-card-footer">
                             <span className="market-card-price">{formatCoins(item.price)}</span>

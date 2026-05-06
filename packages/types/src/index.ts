@@ -358,6 +358,21 @@ export type MarketplaceModelKind =
   | "dino"
   | "custom";
 
+export type MarketplaceWearableSlot =
+  | "hat"
+  | "face"
+  | "neck"
+  | "shoulder"
+  | "back"
+  | "waist"
+  | "gear";
+
+export interface MarketplaceAssetOffset {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface MarketplaceItemRecord {
   id: string;
   name: string;
@@ -373,6 +388,11 @@ export interface MarketplaceItemRecord {
   supply?: number;
   createdAt?: number;
   source?: "official" | "ugc";
+  wearableSlot?: MarketplaceWearableSlot;
+  assetBundleUrl?: string;
+  assetPrefab?: string;
+  assetScale?: number;
+  assetOffset?: MarketplaceAssetOffset;
 }
 
 export interface MarketplaceItemsResponse {
@@ -389,6 +409,11 @@ export interface CreateMarketplaceItemRequest {
   description: string;
   limited: boolean;
   supply?: number;
+  wearableSlot?: MarketplaceWearableSlot;
+  assetBundleUrl?: string;
+  assetPrefab?: string;
+  assetScale?: number;
+  assetOffset?: MarketplaceAssetOffset;
 }
 
 export interface CreateMarketplaceItemResponse {

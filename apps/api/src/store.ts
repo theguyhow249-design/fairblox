@@ -17,6 +17,7 @@ import type {
   GameSessionSummary,
   LoginRequest,
   MarketplaceItemRecord,
+  MarketplaceWearableSlot,
   MarketplaceModelKind,
   PurchaseCurrencyRequest,
   PurchaseMarketplaceItemRequest,
@@ -146,22 +147,32 @@ type StoredCurrencyPurchaseOrder = CurrencyPurchaseOrder & {
 };
 
 const OFFICIAL_MARKETPLACE_ITEMS: StoredMarketplaceItem[] = [
-  { id: "builder-cap", name: "Builder Cap", category: "Hat", price: 120, accent: "linear-gradient(135deg, #f59e0b, #f97316)", modelKind: "cap", emoji: "🧢", creator: "FairbloxStudio", description: "Classic creator cap for Fairblox studio builders.", createdAt: 1, source: "official", creatorUserId: null },
-  { id: "neon-blade", name: "Neon Blade", category: "Gear", price: 280, accent: "linear-gradient(135deg, #0ea5e9, #6366f1)", modelKind: "blade", emoji: "⚔️", creator: "NorthStarDev", description: "Glowing showcase item for profile and action games.", limited: true, supply: 320, createdAt: 2, source: "official", creatorUserId: null },
-  { id: "cloud-wings", name: "Cloud Wings", category: "Back", price: 340, accent: "linear-gradient(135deg, #818cf8, #c4b5fd)", modelKind: "wings", emoji: "🪽", creator: "SkyForge", description: "Soft floating wings for fantasy and obby avatars.", limited: true, supply: 150, createdAt: 3, source: "official", creatorUserId: null },
-  { id: "pixel-boombox", name: "Pixel Boombox", category: "Accessory", price: 180, accent: "linear-gradient(135deg, #ec4899, #f59e0b)", modelKind: "boombox", emoji: "📻", creator: "PlutoBuilds", description: "Retro shoulder gear for hangout spaces and music worlds.", createdAt: 4, source: "official", creatorUserId: null },
-  { id: "frost-crown", name: "Frost Crown", category: "Hat", price: 450, accent: "linear-gradient(135deg, #22d3ee, #a5f3fc)", modelKind: "crown", emoji: "👑", creator: "IceCastleUGC", description: "Shimmering crown worn by legendary frost wizards.", limited: true, supply: 90, createdAt: 5, source: "official", creatorUserId: null },
-  { id: "shades-cool", name: "Galaxy Shades", category: "Face", price: 95, accent: "linear-gradient(135deg, #1e1b4b, #4f46e5)", modelKind: "glasses", emoji: "🕶️", creator: "StyleDrops", description: "Deep space lenses. Very cool.", createdAt: 6, source: "official", creatorUserId: null },
-  { id: "fire-wings", name: "Blaze Wings", category: "Back", price: 390, accent: "linear-gradient(135deg, #dc2626, #f97316)", modelKind: "wings", emoji: "🔥", creator: "InfernoUGC", description: "Flames that trail behind you in every world.", limited: true, supply: 75, createdAt: 7, source: "official", creatorUserId: null },
-  { id: "pixel-sword", name: "Pixel Sword", category: "Gear", price: 85, accent: "linear-gradient(135deg, #64748b, #94a3b8)", modelKind: "blade", emoji: "🗡️", creator: "RetroForge", description: "Classic 8-bit styled blade for retro world builders.", sale: true, createdAt: 8, source: "official", creatorUserId: null },
-  { id: "space-helmet", name: "Space Helmet", category: "Hat", price: 220, accent: "linear-gradient(135deg, #1d4ed8, #06b6d4)", modelKind: "helmet", emoji: "🪐", creator: "CosmicUGC", description: "Pressurized helmet for galaxy explorers.", createdAt: 9, source: "official", creatorUserId: null },
-  { id: "rainbow-halo", name: "Rainbow Halo", category: "Hat", price: 500, accent: "linear-gradient(135deg, #f43f5e, #a855f7, #3b82f6)", modelKind: "halo", emoji: "✨", creator: "FairbloxStudio", description: "Prismatic halo that cycles through every color.", limited: true, supply: 60, createdAt: 10, source: "official", creatorUserId: null },
-  { id: "golden-chain", name: "Golden Chain", category: "Accessory", price: 140, accent: "linear-gradient(135deg, #ca8a04, #fbbf24)", modelKind: "chain", emoji: "⛓️", creator: "SwaggerDrops", description: "Heavy-link chain worn by the boldest builders.", sale: true, createdAt: 11, source: "official", creatorUserId: null },
-  { id: "dino-hat", name: "Dino Top", category: "Hat", price: 65, accent: "linear-gradient(135deg, #16a34a, #84cc16)", modelKind: "dino", emoji: "🦕", creator: "JungleUGC", description: "Iconic dinosaur hat that never goes out of style.", createdAt: 12, source: "official", creatorUserId: null },
+  { id: "builder-cap", name: "Builder Cap", category: "Hat", price: 120, accent: "linear-gradient(135deg, #f59e0b, #f97316)", modelKind: "cap", emoji: "🧢", creator: "FairbloxStudio", description: "Classic creator cap for Fairblox studio builders.", createdAt: 1, source: "official", creatorUserId: null, wearableSlot: "hat", assetBundleUrl: "https://cdn.fairblox.dev/ugc/builder-cap.bundle", assetPrefab: "BuilderCap", assetScale: 1 },
+  { id: "neon-blade", name: "Neon Blade", category: "Gear", price: 280, accent: "linear-gradient(135deg, #0ea5e9, #6366f1)", modelKind: "blade", emoji: "⚔️", creator: "NorthStarDev", description: "Glowing showcase item for profile and action games.", limited: true, supply: 320, createdAt: 2, source: "official", creatorUserId: null, wearableSlot: "gear", assetBundleUrl: "https://cdn.fairblox.dev/ugc/neon-blade.bundle", assetPrefab: "NeonBlade", assetScale: 1.05 },
+  { id: "cloud-wings", name: "Cloud Wings", category: "Back", price: 340, accent: "linear-gradient(135deg, #818cf8, #c4b5fd)", modelKind: "wings", emoji: "🪽", creator: "SkyForge", description: "Soft floating wings for fantasy and obby avatars.", limited: true, supply: 150, createdAt: 3, source: "official", creatorUserId: null, wearableSlot: "back", assetBundleUrl: "https://cdn.fairblox.dev/ugc/cloud-wings.bundle", assetPrefab: "CloudWings", assetScale: 1.1 },
+  { id: "pixel-boombox", name: "Pixel Boombox", category: "Accessory", price: 180, accent: "linear-gradient(135deg, #ec4899, #f59e0b)", modelKind: "boombox", emoji: "📻", creator: "PlutoBuilds", description: "Retro shoulder gear for hangout spaces and music worlds.", createdAt: 4, source: "official", creatorUserId: null, wearableSlot: "shoulder", assetBundleUrl: "https://cdn.fairblox.dev/ugc/pixel-boombox.bundle", assetPrefab: "PixelBoombox", assetScale: 0.95 },
+  { id: "frost-crown", name: "Frost Crown", category: "Hat", price: 450, accent: "linear-gradient(135deg, #22d3ee, #a5f3fc)", modelKind: "crown", emoji: "👑", creator: "IceCastleUGC", description: "Shimmering crown worn by legendary frost wizards.", limited: true, supply: 90, createdAt: 5, source: "official", creatorUserId: null, wearableSlot: "hat", assetBundleUrl: "https://cdn.fairblox.dev/ugc/frost-crown.bundle", assetPrefab: "FrostCrown", assetScale: 1 },
+  { id: "shades-cool", name: "Galaxy Shades", category: "Face", price: 95, accent: "linear-gradient(135deg, #1e1b4b, #4f46e5)", modelKind: "glasses", emoji: "🕶️", creator: "StyleDrops", description: "Deep space lenses. Very cool.", createdAt: 6, source: "official", creatorUserId: null, wearableSlot: "face", assetBundleUrl: "https://cdn.fairblox.dev/ugc/galaxy-shades.bundle", assetPrefab: "GalaxyShades", assetScale: 1 },
+  { id: "fire-wings", name: "Blaze Wings", category: "Back", price: 390, accent: "linear-gradient(135deg, #dc2626, #f97316)", modelKind: "wings", emoji: "🔥", creator: "InfernoUGC", description: "Flames that trail behind you in every world.", limited: true, supply: 75, createdAt: 7, source: "official", creatorUserId: null, wearableSlot: "back", assetBundleUrl: "https://cdn.fairblox.dev/ugc/blaze-wings.bundle", assetPrefab: "BlazeWings", assetScale: 1.15 },
+  { id: "pixel-sword", name: "Pixel Sword", category: "Gear", price: 85, accent: "linear-gradient(135deg, #64748b, #94a3b8)", modelKind: "blade", emoji: "🗡️", creator: "RetroForge", description: "Classic 8-bit styled blade for retro world builders.", sale: true, createdAt: 8, source: "official", creatorUserId: null, wearableSlot: "gear", assetBundleUrl: "https://cdn.fairblox.dev/ugc/pixel-sword.bundle", assetPrefab: "PixelSword", assetScale: 0.92 },
+  { id: "space-helmet", name: "Space Helmet", category: "Hat", price: 220, accent: "linear-gradient(135deg, #1d4ed8, #06b6d4)", modelKind: "helmet", emoji: "🪐", creator: "CosmicUGC", description: "Pressurized helmet for galaxy explorers.", createdAt: 9, source: "official", creatorUserId: null, wearableSlot: "hat", assetBundleUrl: "https://cdn.fairblox.dev/ugc/space-helmet.bundle", assetPrefab: "SpaceHelmet", assetScale: 1.05 },
+  { id: "rainbow-halo", name: "Rainbow Halo", category: "Hat", price: 500, accent: "linear-gradient(135deg, #f43f5e, #a855f7, #3b82f6)", modelKind: "halo", emoji: "✨", creator: "FairbloxStudio", description: "Prismatic halo that cycles through every color.", limited: true, supply: 60, createdAt: 10, source: "official", creatorUserId: null, wearableSlot: "hat", assetBundleUrl: "https://cdn.fairblox.dev/ugc/rainbow-halo.bundle", assetPrefab: "RainbowHalo", assetScale: 1 },
+  { id: "golden-chain", name: "Golden Chain", category: "Accessory", price: 140, accent: "linear-gradient(135deg, #ca8a04, #fbbf24)", modelKind: "chain", emoji: "⛓️", creator: "SwaggerDrops", description: "Heavy-link chain worn by the boldest builders.", sale: true, createdAt: 11, source: "official", creatorUserId: null, wearableSlot: "neck", assetBundleUrl: "https://cdn.fairblox.dev/ugc/golden-chain.bundle", assetPrefab: "GoldenChain", assetScale: 1 },
+  { id: "dino-hat", name: "Dino Top", category: "Hat", price: 65, accent: "linear-gradient(135deg, #16a34a, #84cc16)", modelKind: "dino", emoji: "🦕", creator: "JungleUGC", description: "Iconic dinosaur hat that never goes out of style.", createdAt: 12, source: "official", creatorUserId: null, wearableSlot: "shoulder", assetBundleUrl: "https://cdn.fairblox.dev/ugc/dino-top.bundle", assetPrefab: "DinoTop", assetScale: 0.9 },
 ];
 
 const MARKET_ITEM_CATEGORIES = new Set(["Hat", "Gear", "Back", "Accessory", "Face"]);
 const MODEL_KINDS = new Set<MarketplaceModelKind>(["cap", "blade", "wings", "boombox", "crown", "glasses", "helmet", "halo", "chain", "dino", "custom"]);
+const WEARABLE_SLOTS = new Set<MarketplaceWearableSlot>(["hat", "face", "neck", "shoulder", "back", "waist", "gear"]);
+
+function deriveWearableSlot(category: CreateMarketplaceItemRequest["category"], modelKind: MarketplaceModelKind): MarketplaceWearableSlot {
+  if (category === "Back" || modelKind === "wings") return "back";
+  if (category === "Face" || modelKind === "glasses") return "face";
+  if (category === "Gear" || modelKind === "blade") return "gear";
+  if (modelKind === "boombox" || modelKind === "dino") return "shoulder";
+  if (modelKind === "chain") return "neck";
+  return "hat";
+}
 
 function normalizeMarketplaceCreateInput(input: CreateMarketplaceItemRequest): CreateMarketplaceItemRequest {
   const name = input.name?.trim();
@@ -173,6 +184,17 @@ function normalizeMarketplaceCreateInput(input: CreateMarketplaceItemRequest): C
   const price = Math.max(1, Math.floor(Number(input.price || 0)));
   const limited = Boolean(input.limited);
   const supply = limited ? Math.max(1, Math.floor(Number(input.supply || 0))) : undefined;
+  const wearableSlot = input.wearableSlot && WEARABLE_SLOTS.has(input.wearableSlot) ? input.wearableSlot : deriveWearableSlot(category, modelKind);
+  const assetBundleUrl = input.assetBundleUrl?.trim();
+  const assetPrefab = input.assetPrefab?.trim();
+  const assetScale = Number.isFinite(Number(input.assetScale)) ? Math.max(0.1, Math.min(4, Number(input.assetScale))) : 1;
+  const assetOffset = input.assetOffset
+    ? {
+        x: Number.isFinite(Number(input.assetOffset.x)) ? Number(input.assetOffset.x) : 0,
+        y: Number.isFinite(Number(input.assetOffset.y)) ? Number(input.assetOffset.y) : 0,
+        z: Number.isFinite(Number(input.assetOffset.z)) ? Number(input.assetOffset.z) : 0,
+      }
+    : undefined;
   if (!name || name.length < 3) {
     throw new Error("Item name must be at least 3 characters.");
   }
@@ -198,6 +220,11 @@ function normalizeMarketplaceCreateInput(input: CreateMarketplaceItemRequest): C
     description: description.slice(0, 240),
     limited,
     supply,
+    wearableSlot,
+    assetBundleUrl: assetBundleUrl ? assetBundleUrl.slice(0, 240) : undefined,
+    assetPrefab: assetPrefab ? assetPrefab.slice(0, 80) : undefined,
+    assetScale,
+    assetOffset,
   };
 }
 
