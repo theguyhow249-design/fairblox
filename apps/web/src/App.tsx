@@ -1321,7 +1321,7 @@ export function App() {
   const [favoritedGameIds, setFavoritedGameIds] = useState<Set<string>>(new Set());
   const [followedCreatorUsernames, setFollowedCreatorUsernames] = useState<Set<string>>(new Set());
   const [viewingCreatorFollowers, setViewingCreatorFollowers] = useState<number>(0);
-  const [discoverCategoryTab, setDiscoverCategoryTab] = useState<"featured" | "trending" | "new" | "multiplayer" | "all">("featured");
+  const [discoverCategoryTab, setDiscoverCategoryTab] = useState<"featured" | "trending" | "new" | "multiplayer" | "all">("all");
   const [discoverQuery, setDiscoverQuery] = useState<string>("");
   const [discoverGenreFilter, setDiscoverGenreFilter] = useState<"all" | CreateGameRequest["genre"]>("all");
   const [discoverSort, setDiscoverSort] = useState<"visits" | "likes" | "title">("visits");
@@ -3787,6 +3787,24 @@ export function App() {
       : null);
   const equippedMarketplaceItem = equippedAccessoryItem;
   const normalizedDiscoverQuery = discoverQuery.trim().toLowerCase();
+  const featuredDiscoverIds = new Set(
+    [...games]
+      .sort((left, right) => (right.likes - left.likes) || (right.visits - left.visits))
+      .slice(0, Math.min(6, games.length))
+      .map((game) => game.id),
+  );
+  const trendingDiscoverIds = new Set(
+    [...games]
+      .sort((left, right) => right.visits - left.visits)
+      .slice(0, Math.min(6, games.length))
+      .map((game) => game.id),
+  );
+  const newestDiscoverIds = new Set(
+    [...games]
+      .sort((left, right) => left.visits - right.visits)
+      .slice(0, Math.min(6, games.length))
+      .map((game) => game.id),
+  );
   const discoverGames = [...games]
     .filter((game) => {
       const matchesQuery =
@@ -3801,13 +3819,13 @@ export function App() {
           return true;
         }
         if (discoverCategoryTab === "featured") {
-          return game.likes >= 40;
+          return featuredDiscoverIds.has(game.id);
         }
         if (discoverCategoryTab === "trending") {
-          return game.visits >= 800;
+          return trendingDiscoverIds.has(game.id);
         }
         if (discoverCategoryTab === "new") {
-          return game.visits <= 1200;
+          return newestDiscoverIds.has(game.id);
         }
         return game.genre === "minigame" || game.genre === "collectathon";
       })();
@@ -3824,6 +3842,15 @@ export function App() {
     });
 
   const heroGame = selectedPublicGame ?? games[0] ?? null;
+  const discoverFocusGame = selectedPublicGame ?? discoverGames[0] ?? heroGame;
+  const discoverFocusGameDetail =
+    discoverFocusGame && "mapData" in discoverFocusGame
+      ? (discoverFocusGame as PublishedGameDetail)
+      : null;
+  const runtimePreviewGame =
+    selectedPublicGame && "mapData" in selectedPublicGame
+      ? (selectedPublicGame as PublishedGameDetail)
+      : null;
   const homeRows = games.slice(0, 4);
   const trendingRows = discoverGames.slice(0, 3);
   const recentDraft = selectedGame ?? null;
@@ -5650,38 +5677,38 @@ export function App() {
       <section className="section split">
         <div className="feature-box">
           <h2>Game Detail</h2>
-          {selectedPublicGame ? (
+          {discoverFocusGame ? (
             <div className="public-game">
-              <p className="hint">/{selectedPublicGame.slug}</p>
-              <h3>{selectedPublicGame.title}</h3>
-              <p>{selectedPublicGame.description}</p>
+              <p className="hint">/{discoverFocusGame.slug}</p>
+              <h3>{discoverFocusGame.title}</h3>
+              <p>{discoverFocusGame.description}</p>
               <div className="editor-meta">
-                <span>{selectedPublicGame.genre}</span>
-                <span>by {selectedPublicGame.creatorName}</span>
-                <span>{selectedPublicGame.visits} visits</span>
-                <span>{selectedPublicGame.likes} likes</span>
-                {"publishedVersionNumber" in selectedPublicGame ? (
-                  <span>live v{selectedPublicGame.publishedVersionNumber}</span>
+                <span>{discoverFocusGame.genre}</span>
+                <span>by {discoverFocusGame.creatorName}</span>
+                <span>{discoverFocusGame.visits} visits</span>
+                <span>{discoverFocusGame.likes} likes</span>
+                {discoverFocusGameDetail ? (
+                  <span>live v{discoverFocusGameDetail.publishedVersionNumber}</span>
                 ) : null}
               </div>
               <div className="play-surface">
-                {"mapData" in selectedPublicGame ? (
+                {discoverFocusGameDetail ? (
                   <>
                     <p className="play-title">3D World Preview</p>
                     <p className="hint">
-                      Spawn: {selectedPublicGame.mapData.spawn.x}, {selectedPublicGame.mapData.spawn.y}, {selectedPublicGame.mapData.spawn.z}. Objects: {selectedPublicGame.mapData.objects.length}. Checkpoints: {selectedPublicGame.mapData.checkpoints.length}.
+                      Spawn: {discoverFocusGameDetail.mapData.spawn.x}, {discoverFocusGameDetail.mapData.spawn.y}, {discoverFocusGameDetail.mapData.spawn.z}. Objects: {discoverFocusGameDetail.mapData.objects.length}. Checkpoints: {discoverFocusGameDetail.mapData.checkpoints.length}.
                     </p>
                     <div className="play-stats-grid">
                       <div className="play-stat-card">
-                        <strong>{selectedPublicGame.mapData.objects.length}</strong>
+                        <strong>{discoverFocusGameDetail.mapData.objects.length}</strong>
                         <span>world parts</span>
                       </div>
                       <div className="play-stat-card">
-                        <strong>{selectedPublicGame.mapData.checkpoints.length}</strong>
+                        <strong>{discoverFocusGameDetail.mapData.checkpoints.length}</strong>
                         <span>checkpoints</span>
                       </div>
                       <div className="play-stat-card">
-                        <strong>v{selectedPublicGame.publishedVersionNumber}</strong>
+                        <strong>v{discoverFocusGameDetail.publishedVersionNumber}</strong>
                         <span>live build</span>
                       </div>
                     </div>
@@ -5695,11 +5722,17 @@ export function App() {
                   </>
                 )}
               </div>
-              <button type="button" onClick={joinSelectedPublicGame}>
+              <button
+                type="button"
+                onClick={() => {
+                  openPublicGame(discoverFocusGame.slug);
+                  joinPublicGameBySlug(discoverFocusGame.slug);
+                }}
+              >
                 Join game session
               </button>
               {gameError ? <p className="error">{gameError}</p> : null}
-              {activeSession && runtimePosition ? (
+              {activeSession && runtimePosition && runtimePreviewGame ? (
                 <div className="runtime-panel">
                   <div className="editor-meta">
                     <span>session {activeSession.id.slice(0, 8)}</span>
@@ -5719,7 +5752,7 @@ export function App() {
                           </p>
                         </div>
                         <div className="runtime-hud-chips">
-                          <span className="runtime-hud-chip">{selectedPublicGame.title}</span>
+                          <span className="runtime-hud-chip">{runtimePreviewGame.title}</span>
                           <span className="runtime-hud-chip">{activeSession.playerCount} online</span>
                           <span className="runtime-hud-chip">us-east</span>
                           <span className="runtime-hud-chip">{runtimeSessionCoins} session coins</span>
@@ -5755,7 +5788,7 @@ export function App() {
                               <iframe
                                 key={unityRuntimeFrameKey}
                                 className="runtime-world runtime-world-unity"
-                                title={`${selectedPublicGame.title} Unity runtime`}
+                                title={`${runtimePreviewGame.title} Unity runtime`}
                                 src={unityRuntimeSrc}
                                 allow="fullscreen"
                                 onLoad={() => setUnityRuntimeLoadState("ready")}
@@ -5769,12 +5802,12 @@ export function App() {
                             </div>
                           </div>
                         </>
-                      ) : "mapData" in selectedPublicGame ? (
+                      ) : runtimePreviewGame ? (
                         <>
                           <Suspense fallback={<p className="hint">Loading Fairblox 3D runtime...</p>}>
                             <RuntimePlaza
                               collectedObjectIds={runtimeCollectedObjectIds}
-                              mapData={selectedPublicGame.mapData}
+                              mapData={runtimePreviewGame.mapData}
                               playerFacing={runtimeFacing}
                               playerPosition={runtimePosition}
                               playerCount={activeSession.playerCount}
@@ -5905,10 +5938,10 @@ export function App() {
           )}
         </div>
         <div className="feature-box">
-          <h2>{profile ? "Trending Row" : "Player Loop"}</h2>
-          {profile ? (
+          <h2>{profile ? "Trending Row" : "Featured Picks"}</h2>
+          {(profile ? trendingRows : discoverGames.slice(0, 4)).length > 0 ? (
             <div className="stack-list">
-              {trendingRows.map((game) => (
+              {(profile ? trendingRows : discoverGames.slice(0, 4)).map((game) => (
                 <button key={`trend-${game.id}`} type="button" className="draft-item" onClick={() => openPublicGame(game.slug)}>
                   <strong>{game.title}</strong>
                   <span>{game.genre}</span>
@@ -5917,23 +5950,14 @@ export function App() {
               ))}
             </div>
           ) : (
-            <>
-              <p>
-                Players can already browse a card, open a game page, inspect the live map data, and join a lightweight
-                runtime session.
-              </p>
-              <p>
-                The bigger gap now is creator ergonomics, so the editor includes genre templates and quick placement tools
-                on top of the raw JSON for faster world building.
-              </p>
-            </>
+            <p className="hint">No worlds are available for this filter yet. Try another category or clear the search.</p>
           )}
         </div>
       </section>
       </>
       ) : null}
 
-      {!profile || activeView === "creator" ? (
+      {activeView === "creator" ? (
       <section className="section split">
         <div className="feature-box">
           <h2>Creator Dashboard</h2>
