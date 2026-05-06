@@ -351,14 +351,7 @@ h3 {
 }
 
 .auth-grid {
-  display: grid;
-  grid-template-columns: 0.92fr 1.08fr;
-  gap: 1rem;
-}
-
-.auth-grid form {
-  display: grid;
-  gap: 0.65rem;
+  display: block;
 }
 
 .auth-shell {
@@ -444,6 +437,11 @@ h3 {
   align-content: start;
 }
 
+.auth-card-single {
+  display: grid;
+  gap: 1rem;
+}
+
 .auth-card-primary {
   background:
     radial-gradient(circle at top right, rgba(132, 199, 183, 0.09), transparent 34%),
@@ -454,6 +452,11 @@ h3 {
 
 .auth-card-secondary {
   background: #171b20;
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.7rem;
 }
 
 .auth-card-head {
@@ -496,6 +499,40 @@ h3 {
 
 .auth-card button {
   margin-top: 0.2rem;
+}
+
+.auth-tabs {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+}
+
+.auth-tab {
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.7rem 1rem;
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.auth-tab:hover {
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+}
+
+.auth-tab-active {
+  background: rgba(132, 199, 183, 0.1);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(132, 199, 183, 0.18);
 }
 
 .auth-demo {
