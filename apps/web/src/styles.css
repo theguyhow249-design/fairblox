@@ -357,7 +357,7 @@ h3 {
 
 .auth-shell {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
   gap: 0.85rem;
   align-items: start;
   align-content: start;
@@ -379,6 +379,10 @@ h3 {
     radial-gradient(circle at top right, rgba(132, 199, 183, 0.08), transparent 36%),
     linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)),
     #171b20;
+}
+
+.auth-shell-info {
+  align-content: start;
 }
 
 .auth-shell-copy h2 {
@@ -425,6 +429,73 @@ h3 {
   color: var(--muted);
   font-size: 0.75rem;
   font-weight: 600;
+}
+
+.auth-info-tabs {
+  display: inline-grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+  justify-self: start;
+}
+
+.auth-info-tab {
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.56rem 0.82rem;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.auth-info-tab:hover {
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+}
+
+.auth-info-tab-active {
+  background: rgba(132, 199, 183, 0.1);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(132, 199, 183, 0.18);
+}
+
+.auth-info-panel {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.auth-faq-list,
+.auth-support-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.auth-faq-list div,
+.auth-support-list div {
+  display: grid;
+  gap: 0.22rem;
+  padding: 0.72rem 0.82rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.02);
+}
+
+.auth-faq-list strong,
+.auth-support-list strong {
+  font-size: 0.82rem;
+}
+
+.auth-faq-list p,
+.auth-support-list p {
+  font-size: 0.8rem;
 }
 
 .auth-card {

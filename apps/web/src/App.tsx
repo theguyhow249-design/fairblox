@@ -1251,6 +1251,7 @@ export function App() {
     password: "",
   });
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [authInfoTab, setAuthInfoTab] = useState<"about" | "faq" | "support">("about");
   const [gameForm, setGameForm] = useState<CreateGameRequest>({
     title: "",
     description: "",
@@ -4104,20 +4105,6 @@ export function App() {
             <>
               <p className="panel-label">Auth</p>
               <div className="auth-shell">
-                <div className="auth-shell-copy">
-                  <span className="auth-shell-kicker">Fairblox Access</span>
-                  <h2>{authMode === "login" ? "Log in and get back into your worlds." : "Create your Fairblox account."}</h2>
-                  <p>
-                    {authMode === "login"
-                      ? "One account for your games, avatar, inventory, and creator tools."
-                      : "Start with one profile for worlds, wearables, inventory, and creator tools."}
-                  </p>
-                  <div className="auth-shell-metrics">
-                    <span className="auth-shell-metric">Live sessions</span>
-                    <span className="auth-shell-metric">Avatar inventory</span>
-                    <span className="auth-shell-metric">Creator tools</span>
-                  </div>
-                </div>
                 <div className="auth-card auth-card-primary auth-card-single">
                   <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
                     <button
@@ -4206,6 +4193,82 @@ export function App() {
                       <button type="submit">Create Fairblox account</button>
                     </form>
                   )}
+                </div>
+                <div className="auth-shell-copy auth-shell-info">
+                  <div className="auth-info-tabs" role="tablist" aria-label="Authentication help">
+                    <button
+                      type="button"
+                      className={authInfoTab === "about" ? "auth-info-tab auth-info-tab-active" : "auth-info-tab"}
+                      onClick={() => setAuthInfoTab("about")}
+                    >
+                      About
+                    </button>
+                    <button
+                      type="button"
+                      className={authInfoTab === "faq" ? "auth-info-tab auth-info-tab-active" : "auth-info-tab"}
+                      onClick={() => setAuthInfoTab("faq")}
+                    >
+                      FAQ
+                    </button>
+                    <button
+                      type="button"
+                      className={authInfoTab === "support" ? "auth-info-tab auth-info-tab-active" : "auth-info-tab"}
+                      onClick={() => setAuthInfoTab("support")}
+                    >
+                      Support
+                    </button>
+                  </div>
+                  {authInfoTab === "about" ? (
+                    <div className="auth-info-panel">
+                      <span className="auth-shell-kicker">About Fairblox</span>
+                      <h2>One account for worlds, avatars, inventory, and creator tools.</h2>
+                      <p>Use the same profile for live sessions, Studio projects, marketplace items, and saved avatar loadouts.</p>
+                      <div className="auth-shell-metrics">
+                        <span className="auth-shell-metric">Playable worlds</span>
+                        <span className="auth-shell-metric">Avatar inventory</span>
+                        <span className="auth-shell-metric">Creator dashboard</span>
+                      </div>
+                    </div>
+                  ) : null}
+                  {authInfoTab === "faq" ? (
+                    <div className="auth-info-panel">
+                      <span className="auth-shell-kicker">FAQ</span>
+                      <div className="auth-faq-list">
+                        <div>
+                          <strong>Do I need a separate creator account?</strong>
+                          <p>No. One account covers playing, building, publishing, and inventory.</p>
+                        </div>
+                        <div>
+                          <strong>Will my avatar and items stay saved?</strong>
+                          <p>Yes. Wearables, rig settings, and account state stay tied to your profile.</p>
+                        </div>
+                        <div>
+                          <strong>Can I use email or username to log in?</strong>
+                          <p>Yes. The login form accepts either one.</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                  {authInfoTab === "support" ? (
+                    <div className="auth-info-panel">
+                      <span className="auth-shell-kicker">Support</span>
+                      <h2>Need help getting into your account?</h2>
+                      <div className="auth-support-list">
+                        <div>
+                          <strong>Saved sign-in not restoring?</strong>
+                          <p>Refresh once after the backend wakes up. Free hosting can take a moment to reconnect.</p>
+                        </div>
+                        <div>
+                          <strong>Testing the platform?</strong>
+                          <p>Use the demo account shown in the login card or create a fresh profile in the sign-up tab.</p>
+                        </div>
+                        <div>
+                          <strong>Still blocked?</strong>
+                          <p>Try the sign-up tab for a new account, or retry after the backend finishes waking up.</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
               {authError ? <p className="error">{authError}</p> : null}
