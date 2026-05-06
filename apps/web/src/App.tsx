@@ -40,6 +40,9 @@ import type {
 const RuntimePlaza = lazy(() =>
   import("./RuntimePlaza").then((module) => ({ default: module.RuntimePlaza })),
 );
+const AvatarViewer = lazy(() =>
+  import("./AvatarViewer").then((module) => ({ default: module.AvatarViewer })),
+);
 
 type GamesResponse = {
   games: GameCard[];
@@ -4305,222 +4308,6 @@ export function App() {
       </section>
       ) : null}
 
-      {!profile && !sessionToken && activeView === "home" ? (
-        <section className="section public-home fade-in">
-          <section className="home-hero-strip public-home-strip">
-            <div className="public-home-copy">
-              <p className="eyebrow">Browser-first worlds</p>
-              <h2>Launch games, avatars, and a creator economy from one place.</h2>
-              <p className="lede">
-                Fairblox is the browser-first platform for playable worlds, UGC avatars, marketplace items, and creator publishing.
-                Play instantly, build in Studio, and ship updates without a desktop client.
-              </p>
-              <div className="public-home-kicker">
-                <span>Instant web play</span>
-                <span>Creator-first tools</span>
-                <span>Installable PWA</span>
-              </div>
-              <div className="home-hero-actions">
-                <button type="button" onClick={() => setActiveView("discover")}>Explore worlds</button>
-                <button type="button" className="secondary" onClick={() => setActiveView("creator")}>Open Studio preview</button>
-              </div>
-              <div className="presentation-pills">
-                <span className="presentation-pill">Playable worlds</span>
-                <span className="presentation-pill">Creator studio</span>
-                <span className="presentation-pill">Avatar economy</span>
-                <span className="presentation-pill">Stripe checkout</span>
-              </div>
-            </div>
-            <div className="home-metrics public-home-metrics">
-              <div>
-                <strong>{games.length || 3}</strong>
-                <span>Featured launch worlds</span>
-              </div>
-              <div>
-                <strong>{creatorShare}%</strong>
-                <span>Creator payout after fees</span>
-              </div>
-              <div>
-                <strong>{COIN_BUNDLES.length}</strong>
-                <span>Live currency bundles</span>
-              </div>
-            </div>
-          </section>
-
-          <section className="home-spotlight-grid public-spotlight-grid">
-            <article className="feature-box home-preview public-spotlight-card">
-              <div className="section-head">
-                <h2>Featured world</h2>
-                <button type="button" className="see-all-btn" onClick={() => setActiveView("discover")}>Open discover</button>
-              </div>
-              {heroGame ? (
-                <>
-                  <div className={`public-spotlight-thumb thumb-${heroGame.genre}`}>
-                    <span className="thumb-deco" aria-hidden="true">{GENRE_EMOJIS[heroGame.genre] ?? GENRE_EMOJIS.default}</span>
-                    <span className="thumb-badge">{heroGame.genre}</span>
-                    <span className="thumb-online">👥 {Math.max(1, Math.floor(heroGame.visits / 80)).toLocaleString()} online</span>
-                  </div>
-                  <div className="public-spotlight-body">
-                    <strong>{heroGame.title}</strong>
-                    <span>by {heroGame.creatorName}</span>
-                    <p>{heroGame.description || "A featured world showing the current Fairblox gameplay style."}</p>
-                    <div className="spotlight-stat-row">
-                      <span className="spotlight-stat">{heroGame.visits.toLocaleString()} visits</span>
-                      <span className="spotlight-stat">{heroGame.likes.toLocaleString()} likes</span>
-                      <span className="spotlight-stat">{heroGame.genre}</span>
-                    </div>
-                    <div className="home-banner-actions">
-                      <button type="button" onClick={() => openPublicGame(heroGame.slug, "home")}>View game</button>
-                      <button type="button" className="secondary" onClick={() => void joinPublicGameBySlug(heroGame.slug)}>Play now</button>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <p className="hint">Featured worlds will appear here once games load.</p>
-              )}
-            </article>
-
-            <article className="feature-box home-preview public-spotlight-card">
-              <div className="section-head">
-                <h2>What ships with it</h2>
-                <span>Core platform pillars</span>
-              </div>
-              <div className="stack-list">
-                <div className="stack-item">
-                  <strong>Play and publish</strong>
-                  <span>World pages, session joining, likes, favorites, and public publishing.</span>
-                </div>
-                <div className="stack-item">
-                  <strong>Avatar and inventory</strong>
-                  <span>Custom avatar presets, owned-item state, and installable marketplace cosmetics.</span>
-                </div>
-                <div className="stack-item">
-                  <strong>Payments and economy</strong>
-                  <span>Stripe Checkout for coin bundles, wallet balances, and creator-facing marketplace pricing.</span>
-                </div>
-              </div>
-            </article>
-          </section>
-
-          <section className="home-row-block">
-            <div className="section-head">
-              <h2>Trending right now</h2>
-              <button type="button" className="see-all-btn" onClick={() => setActiveView("discover")}>Browse all</button>
-            </div>
-            <div className="home-rail">
-              {trendingRows.map((game) => (
-                <article className="home-tile clickable" key={`public-trending-${game.id}`} onClick={() => openPublicGame(game.slug, "home")}>
-                  <div className={`home-tile-thumb thumb-${game.genre}`}>
-                    <span className="thumb-deco" aria-hidden="true">{GENRE_EMOJIS[game.genre] ?? GENRE_EMOJIS.default}</span>
-                    <span className="home-tile-badge">Trending</span>
-                    <span className="thumb-online">● {Math.max(3, Math.floor(game.visits / 80)).toLocaleString()}</span>
-                  </div>
-                  <div className="home-tile-body">
-                    <strong>{game.title}</strong>
-                    <span>by {game.creatorName}</span>
-                    <small>{game.visits.toLocaleString()} visits</small>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="home-flow-grid">
-            <article className="feature-box home-flow-card">
-              <span className="home-flow-step">01</span>
-              <strong>Jump into a world</strong>
-              <p className="hint">Discover pages, featured cards, and one-click play keep the first session fast.</p>
-            </article>
-            <article className="feature-box home-flow-card">
-              <span className="home-flow-step">02</span>
-              <strong>Customize your identity</strong>
-              <p className="hint">Wallet, inventory, and avatar items all feed the same account state.</p>
-            </article>
-            <article className="feature-box home-flow-card">
-              <span className="home-flow-step">03</span>
-              <strong>Open Studio and publish</strong>
-              <p className="hint">Move from playing to building without switching platforms or installing heavy tools.</p>
-            </article>
-          </section>
-
-          <section className="split-rails public-summary-grid">
-            <article className="feature-box rail-panel">
-              <div className="section-head">
-                <h2>Creator hooks</h2>
-                <span>Build faster</span>
-              </div>
-              <div className="stack-list compact-stack">
-                <div className="stack-item">
-                  <strong>Visual world editor</strong>
-                  <span>Place objects, checkpoints, and structured world data directly in Studio.</span>
-                </div>
-                <div className="stack-item">
-                  <strong>Genre templates</strong>
-                  <span>Start with obby, minigame, or collectathon layouts instead of a blank map.</span>
-                </div>
-                <div className="stack-item">
-                  <strong>PWA app shell</strong>
-                  <span>Install Fairblox on mobile and desktop once the site is deployed over HTTPS.</span>
-                </div>
-              </div>
-            </article>
-
-            <article className="feature-box rail-panel">
-              <div className="section-head">
-                <h2>Economy hooks</h2>
-                <span>Monetize cleanly</span>
-              </div>
-              <div className="stack-list compact-stack">
-                <div className="stack-item">
-                  <strong>Coin bundles</strong>
-                  <span>{COIN_BUNDLES[0]?.priceLabel ?? "$4.99"} to {COIN_BUNDLES[COIN_BUNDLES.length - 1]?.priceLabel ?? "$49.99"} checkout tiers.</span>
-                </div>
-                <div className="stack-item">
-                  <strong>Marketplace inventory</strong>
-                  <span>Owned items sync into avatar customization and inventory state.</span>
-                </div>
-                <div className="stack-item">
-                  <strong>Stripe-backed fulfillment</strong>
-                  <span>Wallet credit happens after verified checkout completion instead of client-only simulation.</span>
-                </div>
-              </div>
-            </article>
-          </section>
-
-          <section className="presentation-strip">
-            <div className="presentation-strip-card">
-              <span className="presentation-strip-label">Built for launch</span>
-              <strong>Public web, mobile install, creator tools, and wallet flow in one stack.</strong>
-            </div>
-            <div className="presentation-strip-card">
-              <span className="presentation-strip-label">Best first demo</span>
-              <strong>Open a world, buy currency, equip an item, then jump into Studio.</strong>
-            </div>
-            <div className="presentation-strip-card">
-              <span className="presentation-strip-label">Current feel</span>
-              <strong>Roblox-inspired product direction with a faster browser-first loop.</strong>
-            </div>
-          </section>
-
-          <section className="feature-box home-banner public-home-cta">
-            <div>
-              <p className="panel-label">Start here</p>
-              <h2>Play first, then build your own world.</h2>
-              <p className="hint">Browse public games, test the marketplace flow, then move into Studio when you want to create.</p>
-            </div>
-            <div className="home-banner-actions">
-              <button type="button" onClick={() => setActiveView("discover")}>Browse games</button>
-              <button type="button" className="secondary" onClick={() => setActiveView("creator")}>See creator tools</button>
-            </div>
-          </section>
-
-          <footer className="presentation-footer">
-            <strong>Fairblox</strong>
-            <span>Playable worlds, creator tooling, avatar inventory, and monetization in one browser-first stack.</span>
-          </footer>
-        </section>
-      ) : null}
-
       {profile && activeView === "home" ? (
         <>
           <section className="section rb-shell">
@@ -4823,35 +4610,16 @@ export function App() {
                   <div className="av-editor-left">
                     <div className="av-stage-card">
                       <div className="avatar-stage">
-                        <div
-                          className="avatar-figure"
-                          style={{
-                            "--av-skin": avatarDraft.skinTone,
-                            "--av-shirt": avatarDraft.shirtColor,
-                            "--av-pants": avatarDraft.pantsColor,
-                            "--av-body-type": String(avatarRigDraft.bodyType / 100),
-                            "--av-height-scale": String(0.9 + avatarRigDraft.heightScale / 200),
-                            "--av-head-scale": String(0.9 + avatarRigDraft.headScale / 200),
-                          } as React.CSSProperties}
-                        >
-                          <div className="av-head">
-                            <div className={`av-eyes av-eyes-${avatarDraft.face.toLowerCase().replace(/\s+/g, "-")}`} />
-                          </div>
-                          <div className="av-torso">
-                            <div className="av-arm" />
-                            <div className="av-body" />
-                            <div className="av-arm" />
-                          </div>
-                          <div className="av-legs">
-                            <div className="av-leg" />
-                            <div className="av-leg" />
-                          </div>
-                          {equippedWearableEntries.map(({ slotKey, item }) => (
-                            <div key={`${slotKey}-${item.id}`} className={`av-wearable av-wearable-${slotKey}`}>
-                              <span>{item.emoji}</span>
-                            </div>
-                          ))}
-                        </div>
+                        <Suspense fallback={null}>
+                          <AvatarViewer
+                            skinTone={avatarDraft.skinTone}
+                            shirtColor={avatarDraft.shirtColor}
+                            pantsColor={avatarDraft.pantsColor}
+                            bodyType={avatarRigDraft.bodyType}
+                            heightScale={avatarRigDraft.heightScale}
+                            headScale={avatarRigDraft.headScale}
+                          />
+                        </Suspense>
                         <div className="av-accessory-tag">
                           {equippedWearableEntries.length > 0 ? `${equippedWearableEntries.length} wearable${equippedWearableEntries.length > 1 ? "s" : ""} equipped` : "No wearables equipped"}
                         </div>
