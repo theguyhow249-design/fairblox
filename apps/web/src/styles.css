@@ -2454,42 +2454,43 @@ select {
 }
 
 .runtime-panel {
-  margin-top: 0.8rem;
+  margin-top: 1rem;
   display: grid;
-  gap: 0.8rem;
+  gap: 1rem;
 }
 
 .runtime-grid {
   display: grid;
   grid-template-columns: 1.5fr 1fr;
-  gap: 0.8rem;
+  gap: 1rem;
 }
 
 .runtime-stage,
 .runtime-controls {
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 18px;
-  padding: 1rem;
-  background: rgba(23, 27, 32, 0.98);
+  padding: 1.1rem;
+  background: #171c22;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.16);
 }
 
 .runtime-controls {
   display: grid;
-  gap: 0.65rem;
+  gap: 0.8rem;
   align-content: start;
 }
 
 .runtime-prompt-card,
 .runtime-sidecard {
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 16px;
-  padding: 0.9rem;
-  background: rgba(255,255,255,0.025);
+  padding: 1rem;
+  background: rgba(255,255,255,0.02);
 }
 
 .runtime-prompt-card {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.45rem;
 }
 
 .runtime-action-row {
@@ -2501,15 +2502,16 @@ select {
 
 .runtime-prompt-label {
   color: var(--accent);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
 .runtime-prompt-card strong {
-  font-size: 0.98rem;
-  line-height: 1.35;
+  font-size: 1.02rem;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
 }
 
 .runtime-stage-head {
@@ -2527,13 +2529,15 @@ select {
 }
 
 .runtime-hud-chip {
-  padding: 0.36rem 0.64rem;
+  padding: 0.42rem 0.72rem;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.05);
-  color: #e4efff;
-  font-size: 0.76rem;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+  color: #d7dee7;
+  font-size: 0.72rem;
   font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .runtime-engine-toggle {
@@ -2543,14 +2547,16 @@ select {
 }
 
 .runtime-engine-button {
-  border-radius: 12px;
-  padding: 0.6rem 0.75rem;
-  font-size: 0.82rem;
+  border-radius: 14px;
+  padding: 0.72rem 0.8rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .runtime-engine-button-active {
-  border-color: rgba(56, 217, 200, 0.45);
-  background: rgba(56, 217, 200, 0.14);
+  border-color: rgba(132, 199, 183, 0.32);
+  background: rgba(132, 199, 183, 0.1);
   color: var(--text);
 }
 
@@ -2590,9 +2596,9 @@ select {
   display: block;
   margin-top: 0.8rem;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: linear-gradient(180deg, #20262d 0%, #151a20 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 10px 24px rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(180deg, #232a31 0%, #171c22 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 10px 22px rgba(0,0,0,0.14);
 }
 
 .runtime-world-unity {
@@ -2603,8 +2609,8 @@ select {
 
 .unity-shell {
   display: grid;
-  gap: 0.75rem;
-  margin-top: 0.8rem;
+  gap: 0.9rem;
+  margin-top: 0.9rem;
 }
 
 .unity-shell-bar,
@@ -2618,6 +2624,7 @@ select {
 
 .unity-shell-copy {
   margin: 0.2rem 0 0;
+  max-width: 56ch;
 }
 
 .unity-shell-actions {
@@ -2630,6 +2637,8 @@ select {
   position: relative;
   border-radius: 18px;
   overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: #111417;
 }
 
 .unity-shell-overlay {
@@ -2638,15 +2647,16 @@ select {
   z-index: 2;
   display: grid;
   place-content: center;
-  gap: 0.45rem;
+  gap: 0.55rem;
   text-align: center;
-  padding: 1rem;
-  background: linear-gradient(180deg, rgba(7, 11, 22, 0.62) 0%, rgba(7, 11, 22, 0.84) 100%);
-  backdrop-filter: blur(6px);
+  padding: 1.2rem;
+  background: linear-gradient(180deg, rgba(17, 20, 23, 0.58) 0%, rgba(17, 20, 23, 0.86) 100%);
+  backdrop-filter: blur(5px);
 }
 
 .unity-shell-overlay strong {
-  font-size: 1rem;
+  font-size: 1.04rem;
+  letter-spacing: -0.02em;
 }
 
 .unity-shell-overlay span,
@@ -2737,7 +2747,7 @@ select {
 }
 
 .runtime-legend {
-  margin-top: 0.8rem;
+  margin-top: 0.9rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -2749,6 +2759,8 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.03em;
 }
 
 .runtime-roster {
@@ -2761,9 +2773,10 @@ select {
   grid-template-columns: auto 1fr auto;
   gap: 0.6rem;
   align-items: center;
-  padding: 0.7rem 0.8rem;
+  padding: 0.8rem 0.85rem;
   border-radius: 14px;
-  background: var(--runtime-roster-accent, rgba(255,255,255,0.04));
+  background: var(--runtime-roster-accent, rgba(255,255,255,0.03));
+  border: 1px solid rgba(255,255,255,0.05);
   color: #fff;
 }
 
@@ -2788,9 +2801,10 @@ select {
 .runtime-chat-row {
   display: grid;
   gap: 0.2rem;
-  padding: 0.65rem 0.72rem;
+  padding: 0.72rem 0.8rem;
   border-radius: 14px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
 }
 
 .runtime-chat-row strong {
@@ -2822,6 +2836,11 @@ select {
 
 .runtime-chat-form input {
   min-width: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  padding: 0.78rem 0.9rem;
 }
 
 .legend-swatch {
