@@ -4113,14 +4113,9 @@ export function App() {
                       : "Start with one profile for worlds, wearables, inventory, and creator tools."}
                   </p>
                   <div className="auth-shell-metrics">
-                    <div className="auth-shell-metric">
-                      <strong>Games</strong>
-                      <span>Join live sessions and jump back into published worlds.</span>
-                    </div>
-                    <div className="auth-shell-metric">
-                      <strong>Avatar</strong>
-                      <span>Saved outfits, wearables, and rig settings stay on your profile.</span>
-                    </div>
+                    <span className="auth-shell-metric">Live sessions</span>
+                    <span className="auth-shell-metric">Avatar inventory</span>
+                    <span className="auth-shell-metric">Creator tools</span>
                   </div>
                 </div>
                 <div className="auth-card auth-card-primary auth-card-single">
