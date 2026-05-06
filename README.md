@@ -62,6 +62,48 @@ stripe listen --forward-to http://localhost:4000/payments/stripe/webhook
 
 Coin bundles are fulfilled only after the Stripe webhook confirms checkout completion.
 
+### Stripe Troubleshooting (Windows PowerShell)
+
+If `stripe` is not recognized:
+
+```powershell
+winget install --id Stripe.StripeCli --accept-source-agreements --accept-package-agreements
+```
+
+If Stripe CLI was just installed, open a new terminal (or refresh `PATH` in the current one):
+
+```powershell
+$env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+```
+
+Authenticate CLI once:
+
+```powershell
+stripe login
+```
+
+Start local dev from any directory (uses an absolute repo path):
+
+```powershell
+$env:STRIPE_SECRET_KEY="sk_test_..."
+$env:STRIPE_WEBHOOK_SECRET="whsec_..."
+$env:APP_BASE_URL="http://localhost:5173"
+$env:API_BASE_URL="http://localhost:4000"
+npm --prefix C:\Users\thegu\fairblox run dev
+```
+
+In a separate terminal, run webhook forwarding:
+
+```powershell
+stripe listen --events checkout.session.completed --forward-to http://localhost:4000/payments/stripe/webhook
+```
+
+Notes:
+
+- The `whsec_...` used for local testing should come from `stripe listen` output.
+- In PowerShell, environment variables must use `$env:NAME="value"` syntax.
+- `APP_BASE_URL=https://...` (without `$env:`) is shell syntax for bash/zsh, not PowerShell.
+
 ## Public Deploy
 
 Fairblox now includes a baseline [render.yaml](/abs/path/c:/Users/thegu/fairblox/render.yaml) for deploying:

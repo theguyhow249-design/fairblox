@@ -78,10 +78,13 @@ export function signup(input: SignupRequest): AuthResponse {
 }
 
 export function login(input: LoginRequest): AuthResponse {
-  const username = input.username.trim().toLowerCase();
-  const user = users.get(username);
+  const identity = String(input.identifier ?? input.username ?? input.email ?? "").trim().toLowerCase();
+  let user = users.get(identity);
+  if (!user) {
+    user = [...users.values()].find((candidate) => candidate.email === identity);
+  }
   if (!user || user.passwordHash !== hashPassword(input.password)) {
-    throw new Error("Invalid username or password.");
+    throw new Error("Invalid email/username or password.");
   }
   return issueAuthResponse(user);
 }

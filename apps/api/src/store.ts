@@ -3369,6 +3369,32 @@ export async function createStore(): Promise<Store> {
   await pool.query("SELECT 1");
   await pool.query(
     `
+    CREATE TABLE IF NOT EXISTS users (
+      id UUID PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      username TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'player',
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+    `,
+  );
+  await pool.query(
+    `
+    CREATE TABLE IF NOT EXISTS profiles (
+      user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      display_name TEXT NOT NULL,
+      bio TEXT NOT NULL DEFAULT '',
+      avatar_preset TEXT NOT NULL DEFAULT 'starter',
+      coins INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+    `,
+  );
+  await pool.query(
+    `
     CREATE TABLE IF NOT EXISTS user_account_state (
       user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
       state_json JSONB NOT NULL,
