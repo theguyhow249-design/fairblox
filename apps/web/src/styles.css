@@ -1946,10 +1946,9 @@ select {
 .message-body-panel,
 .avatar-preview-card,
 .avatar-controls-card {
-  border: 1px solid var(--line-hi);
-  border-top-color: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: var(--radius);
-  background: linear-gradient(160deg, rgba(13,22,38,0.98) 0%, rgba(8,14,26,0.98) 100%);
+  background: #171b20;
   box-shadow: var(--shadow-card);
 }
 
@@ -1982,14 +1981,14 @@ select {
   text-align: left;
   padding: 0.8rem 0.9rem;
   margin-bottom: 0.55rem;
-  background: rgba(8, 16, 24, 0.48);
+  background: rgba(29, 35, 42, 0.72);
   color: var(--text);
   border: 1px solid var(--line);
 }
 
 .message-thread-active {
-  border-color: rgba(79, 209, 197, 0.45);
-  background: rgba(79, 209, 197, 0.08);
+  border-color: rgba(132, 199, 183, 0.28);
+  background: rgba(132, 199, 183, 0.08);
 }
 
 .message-thread span {
@@ -2005,14 +2004,14 @@ select {
   max-width: 32rem;
   padding: 0.85rem 1rem;
   border-radius: 18px 18px 18px 6px;
-  background: rgba(8, 16, 24, 0.58);
+  background: rgba(29, 35, 42, 0.74);
   border: 1px solid var(--line);
 }
 
 .message-bubble-me {
   margin-left: auto;
   border-radius: 18px 18px 6px 18px;
-  background: rgba(79, 209, 197, 0.1);
+  background: rgba(132, 199, 183, 0.1);
 }
 
 .message-bubble p,
@@ -2049,10 +2048,13 @@ select {
   min-height: 360px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--line-hi);
-  border-radius: 12px;
-  background: var(--panel-2);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at top, rgba(255,255,255,0.04), transparent 34%),
+    linear-gradient(180deg, #222931 0%, #171b20 100%);
   position: relative;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
 }
 
 .avatar-stage-aura { display: none; }
@@ -2203,8 +2205,8 @@ select {
   width: min(88%, 260px);
   padding: 0.48rem 0.72rem;
   border-radius: 12px;
-  border: 1px solid var(--line-hi);
-  background: rgba(8, 16, 24, 0.72);
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(23, 27, 32, 0.78);
 }
 
 .avatar-stage-identity strong {
@@ -2237,8 +2239,8 @@ select {
 }
 
 .pill-chip-active {
-  border-color: rgba(79, 209, 197, 0.45);
-  background: rgba(79, 209, 197, 0.1);
+  border-color: rgba(132, 199, 183, 0.28);
+  background: rgba(132, 199, 183, 0.1);
 }
 
 .avatar-slot-grid {
@@ -2249,15 +2251,15 @@ select {
 .avatar-slot-card {
   padding: 0.75rem 0.85rem;
   border-radius: 14px;
-  border: 1px solid var(--line);
-  background: rgba(8, 16, 24, 0.52);
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(29, 35, 42, 0.72);
   display: grid;
   gap: 0.6rem;
 }
 
 .avatar-slot-active {
-  border-color: rgba(79, 209, 197, 0.45);
-  background: rgba(79, 209, 197, 0.08);
+  border-color: rgba(132, 199, 183, 0.28);
+  background: rgba(132, 199, 183, 0.08);
 }
 
 .avatar-slot-actions {
@@ -2269,9 +2271,9 @@ select {
   display: grid;
   gap: 0.55rem;
   padding: 1rem;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 20px;
-  background: rgba(8, 16, 24, 0.52);
+  background: rgba(29, 35, 42, 0.72);
 }
 
 .shop-card-art {
@@ -2294,8 +2296,8 @@ select {
 .wallet-summary {
   padding: 0.7rem 0.9rem;
   border-radius: 999px;
-  background: rgba(79, 209, 197, 0.1);
-  border: 1px solid rgba(79, 209, 197, 0.24);
+  background: rgba(132, 199, 183, 0.08);
+  border: 1px solid rgba(132, 199, 183, 0.2);
   color: var(--accent);
 }
 
@@ -3523,16 +3525,17 @@ select {
 }
 
 .av-stage-card {
-  border: 1px solid var(--line-hi);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: var(--radius);
-  background: var(--panel);
+  background: #171b20;
   overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 
 .av-stage-card .avatar-stage {
   border: none;
   border-radius: 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   min-height: 280px;
 }
 
@@ -3567,10 +3570,11 @@ select {
 }
 
 .av-outfits-card {
-  border: 1px solid var(--line-hi);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: var(--radius);
-  background: var(--panel);
+  background: #171b20;
   overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 
 .av-outfits-header {
@@ -3601,12 +3605,12 @@ select {
 }
 
 .av-outfit-row:hover {
-  background: var(--panel-2);
+  background: rgba(255,255,255,0.03);
   filter: none;
 }
 
 .av-outfit-active {
-  background: rgba(79, 209, 197, 0.06);
+  background: rgba(132, 199, 183, 0.08);
   border-left: 3px solid var(--accent);
 }
 
@@ -3640,10 +3644,11 @@ select {
 .av-editor-right {
   display: grid;
   grid-template-rows: auto auto 1fr;
-  border: 1px solid var(--line-hi);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: var(--radius);
-  background: var(--panel);
+  background: #171b20;
   overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 
 /* ── Category tabs ── */
@@ -3708,9 +3713,9 @@ select {
 .av-item {
   display: grid;
   gap: 0;
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  background: #1d232a;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
   padding: 0;
   cursor: pointer;
   text-align: center;
@@ -3719,14 +3724,14 @@ select {
 }
 
 .av-item:hover {
-  border-color: var(--line-hi);
+  border-color: rgba(132, 199, 183, 0.18);
   transform: translateY(-2px);
   filter: none;
 }
 
 .av-item-equipped {
   border-color: var(--accent) !important;
-  background: rgba(79, 209, 197, 0.06);
+  background: rgba(132, 199, 183, 0.08);
 }
 
 .av-item-thumb {
