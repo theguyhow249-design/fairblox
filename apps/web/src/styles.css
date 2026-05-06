@@ -2,21 +2,21 @@
 
 :root {
   color-scheme: dark;
-  --bg: #09111a;
-  --panel: #101a25;
-  --panel-2: #162230;
-  --line: #233245;
-  --line-hi: #36506b;
-  --text: #f4f7fb;
-  --muted: #91a0b3;
-  --accent: #4fd1c5;
-  --accent-hi: #76e4d8;
-  --accent-2: #ffb44c;
-  --accent-purple: #87a5ff;
+  --bg: #0f1215;
+  --panel: #171b20;
+  --panel-2: #1d232a;
+  --line: #2a323c;
+  --line-hi: #3a4654;
+  --text: #eef2f6;
+  --muted: #98a4b3;
+  --accent: #84c7b7;
+  --accent-hi: #9bd7ca;
+  --accent-2: #caa56b;
+  --accent-purple: #9ba8c8;
   --red: #f87171;
   --green: #3dd68c;
-  --radius: 18px;
-  --shadow-card: 0 20px 48px rgba(0,0,0,0.26);
+  --radius: 16px;
+  --shadow-card: 0 10px 24px rgba(0,0,0,0.18);
   --shadow-glow: none;
 }
 
@@ -28,9 +28,9 @@ body {
   margin: 0;
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(79,209,197,0.12), transparent 28%),
-    radial-gradient(circle at top right, rgba(255,180,76,0.12), transparent 24%),
-    linear-gradient(180deg, #09111a 0%, #0b1520 38%, #09111a 100%);
+    radial-gradient(circle at top left, rgba(132,199,183,0.06), transparent 26%),
+    radial-gradient(circle at top right, rgba(202,165,107,0.05), transparent 20%),
+    linear-gradient(180deg, #0f1215 0%, #11161b 38%, #0f1215 100%);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   position: relative;
@@ -41,12 +41,12 @@ body::before {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 34px 34px;
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 40px 40px;
   mask-image: radial-gradient(circle at center, rgba(0,0,0,0.9), transparent 88%);
   pointer-events: none;
-  opacity: 0.45;
+  opacity: 0.28;
 }
 
 button {
@@ -54,7 +54,7 @@ button {
   border-radius: 8px;
   padding: 0.62rem 1.15rem;
   background: var(--accent);
-  color: #0a1a18;
+  color: #101614;
   font-weight: 700;
   font-family: inherit;
   font-size: 0.87rem;
@@ -68,7 +68,7 @@ button {
 button::after { content: none; }
 
 button:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.04);
 }
 
 button:active {
@@ -105,11 +105,11 @@ button.secondary:hover {
   position: sticky;
   top: 10px;
   z-index: 20;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(15,25,37,0.88) 0%, rgba(10,17,27,0.92) 100%);
-  backdrop-filter: blur(16px) saturate(1.1);
-  box-shadow: 0 18px 40px rgba(0,0,0,0.24);
+  background: rgba(20, 24, 29, 0.94);
+  backdrop-filter: blur(10px) saturate(0.92);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.18);
 }
 
 .shell-brand-block {
@@ -122,12 +122,12 @@ button.secondary:hover {
   width: 34px;
   height: 34px;
   border-radius: 11px;
-  background: linear-gradient(135deg, var(--accent), #ffb44c);
+  background: #91cbbb;
   display: grid;
   place-items: center;
   font-size: 0.9rem;
   font-weight: 900;
-  color: #0a1a18;
+  color: #111614;
   flex-shrink: 0;
   letter-spacing: -0.04em;
 }
@@ -194,9 +194,9 @@ button.secondary:hover {
 }
 
 .wallet-chip {
-  background: rgba(79,209,197,0.1);
+  background: rgba(132,199,183,0.08);
   color: var(--accent);
-  border: 1px solid rgba(79,209,197,0.2);
+  border: 1px solid rgba(132,199,183,0.18);
   box-shadow: none;
   font-size: 0.82rem;
   font-weight: 700;
@@ -205,7 +205,7 @@ button.secondary:hover {
 }
 
 .wallet-chip:hover {
-  background: rgba(79,209,197,0.16);
+  background: rgba(132,199,183,0.12);
   box-shadow: none;
   transform: none;
 }
@@ -934,8 +934,8 @@ select {
   padding: 0.55rem 0.45rem;
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 22px;
-  background: linear-gradient(180deg, rgba(15,18,24,0.98) 0%, rgba(10,13,18,0.98) 100%);
-  box-shadow: 0 18px 38px rgba(0,0,0,0.28);
+  background: #13171c;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
 }
 
 .rb-rail-item {
@@ -1154,7 +1154,7 @@ select {
   border: 1px solid rgba(255,255,255,0.08);
   border-top-color: rgba(255,255,255,0.08);
   border-radius: 20px;
-  background: linear-gradient(160deg, rgba(14,24,40,0.97) 0%, rgba(8,14,26,0.97) 100%);
+  background: #171b20;
   box-shadow: var(--shadow-card);
 }
 
@@ -1175,8 +1175,8 @@ select {
   font-weight: 800;
   font-size: 1.2rem;
   color: #fff;
-  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
-  box-shadow: 0 6px 18px rgba(56,217,200,0.25);
+  background: #2a333c;
+  box-shadow: none;
 }
 
 .home-profile-card {
@@ -1307,14 +1307,13 @@ select {
   min-height: 180px;
   padding: 1.2rem;
   border-radius: 20px;
-  background:
-    linear-gradient(180deg, rgba(14,24,40,0.98) 0%, rgba(8,14,26,0.98) 100%);
+  background: #171b20;
 }
 
 .dashboard-card-primary {
   background:
-    radial-gradient(circle at top right, rgba(79,209,197,0.14), transparent 34%),
-    linear-gradient(180deg, rgba(14,24,40,0.98) 0%, rgba(8,14,26,0.98) 100%);
+    radial-gradient(circle at top right, rgba(132,199,183,0.08), transparent 30%),
+    #171b20;
 }
 
 .dashboard-card-label {
@@ -1429,9 +1428,8 @@ select {
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 18px;
   padding: 1rem 1.05rem;
-  background:
-    linear-gradient(180deg, rgba(18,31,46,0.96) 0%, rgba(10,17,27,0.98) 100%);
-  box-shadow: 0 16px 36px rgba(0,0,0,0.18);
+  background: #171b20;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.14);
   display: grid;
   gap: 0.45rem;
 }
@@ -1483,8 +1481,8 @@ select {
 .home-profile-card:hover,
 .home-hero-strip:hover {
   transform: translateY(-3px);
-  border-color: rgba(56,217,200,0.4);
-  box-shadow: 0 20px 44px rgba(0,0,0,0.38), 0 0 0 1px rgba(56,217,200,0.08);
+  border-color: rgba(132,199,183,0.28);
+  box-shadow: 0 12px 26px rgba(0,0,0,0.2), 0 0 0 1px rgba(132,199,183,0.05);
 }
 
 .friend-card {
@@ -2398,9 +2396,7 @@ select {
   border: 1px solid var(--line);
   border-radius: 18px;
   padding: 1rem;
-  background:
-    linear-gradient(180deg, rgba(79, 209, 197, 0.08), transparent 45%),
-    rgba(8, 16, 24, 0.78);
+  background: rgba(23, 27, 32, 0.96);
 }
 
 .play-title {
@@ -2419,7 +2415,7 @@ select {
   padding: 0.8rem 0.9rem;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: rgba(8, 16, 24, 0.72);
+  background: rgba(29, 35, 42, 0.96);
 }
 
 .play-stat-card strong {
@@ -2438,7 +2434,7 @@ select {
   max-height: 240px;
   overflow: auto;
   border-radius: 14px;
-  background: rgba(8, 16, 24, 0.95);
+  background: rgba(22, 26, 31, 0.98);
   border: 1px solid var(--line);
   color: var(--muted);
   font-family: Consolas, monospace;
@@ -2462,9 +2458,7 @@ select {
   border: 1px solid var(--line);
   border-radius: 18px;
   padding: 1rem;
-  background:
-    radial-gradient(circle at top right, rgba(192, 132, 252, 0.08), transparent 28%),
-    linear-gradient(180deg, rgba(9, 18, 30, 0.86) 0%, rgba(8, 16, 24, 0.78) 100%);
+  background: rgba(23, 27, 32, 0.98);
 }
 
 .runtime-controls {
@@ -2478,7 +2472,7 @@ select {
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 16px;
   padding: 0.9rem;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.025);
 }
 
 .runtime-prompt-card {
@@ -2585,10 +2579,8 @@ select {
   margin-top: 0.8rem;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.08);
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.14), transparent 35%),
-    linear-gradient(180deg, rgba(30, 17, 59, 0.96) 0%, rgba(9, 15, 30, 0.98) 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 18px 38px rgba(0,0,0,0.28);
+  background: linear-gradient(180deg, #20262d 0%, #151a20 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 10px 24px rgba(0,0,0,0.18);
 }
 
 .runtime-world-unity {
@@ -3125,7 +3117,7 @@ select {
 .market-card {
   border: 1px solid var(--line-hi);
   border-radius: 14px;
-  background: rgba(10,18,32,0.9);
+  background: rgba(23,27,32,0.98);
   overflow: hidden;
   transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
   cursor: pointer;
@@ -3133,13 +3125,13 @@ select {
 
 .market-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(56,217,200,0.35);
-  box-shadow: 0 14px 32px rgba(0,0,0,0.4);
+  border-color: rgba(132,199,183,0.24);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.18);
 }
 
 .market-card-owned {
-  border-color: rgba(56,217,200,0.22);
-  background: rgba(56,217,200,0.04);
+  border-color: rgba(132,199,183,0.2);
+  background: rgba(132,199,183,0.035);
 }
 
 .market-card-art {
@@ -3148,7 +3140,7 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(56,217,200,0.22), rgba(167,139,250,0.18));
+  background: linear-gradient(135deg, rgba(132,199,183,0.14), rgba(155,168,200,0.1));
 }
 
 .market-model {
@@ -3831,7 +3823,7 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--panel-2), var(--panel));
+  background: #1c2229;
 }
 .game-detail-emoji {
   font-size: 4rem;
