@@ -4105,31 +4105,27 @@ export function App() {
               <div className="auth-shell">
                 <div className="auth-shell-copy">
                   <span className="auth-shell-kicker">Fairblox Access</span>
-                  <h2>Join the platform where worlds, avatars, and UGC items connect.</h2>
+                  <h2>Log in and get back into your worlds.</h2>
                   <p>
-                    Create an account to publish games, build a real avatar rig, own marketplace items, and launch into live sessions.
+                    One account for your games, avatar, inventory, and creator tools.
                   </p>
-                  <div className="auth-shell-points">
-                    <div className="auth-shell-point">
-                      <strong>Creator ready</strong>
-                      <span>Draft worlds, publish updates, and prep your future Studio workflow.</span>
+                  <div className="auth-shell-metrics">
+                    <div className="auth-shell-metric">
+                      <strong>Games</strong>
+                      <span>Join live sessions and jump back into published worlds.</span>
                     </div>
-                    <div className="auth-shell-point">
-                      <strong>Identity first</strong>
-                      <span>Wearable slots, saved outfits, and avatar items stay tied to the same account.</span>
-                    </div>
-                    <div className="auth-shell-point">
-                      <strong>Live runtime</strong>
-                      <span>Move between the web shell and Unity runtime without losing session context.</span>
+                    <div className="auth-shell-metric">
+                      <strong>Avatar</strong>
+                      <span>Saved outfits, wearables, and rig settings stay on your profile.</span>
                     </div>
                   </div>
                 </div>
                 <div className="auth-grid">
-                  <form className="auth-card" onSubmit={handleSignup}>
+                  <form className="auth-card auth-card-secondary" onSubmit={handleSignup}>
                     <div className="auth-card-head">
                       <span className="auth-card-tag">New Account</span>
                       <h2>Create Account</h2>
-                      <p>Start building, buying, and publishing from one profile.</p>
+                      <p>Make a profile for worlds, items, and creator tools.</p>
                     </div>
                     <label className="auth-field">
                       <span>Display name</span>
@@ -4167,11 +4163,11 @@ export function App() {
                     </label>
                     <button type="submit">Create Fairblox account</button>
                   </form>
-                  <form className="auth-card auth-card-secondary" onSubmit={handleLogin}>
+                  <form className="auth-card auth-card-primary" onSubmit={handleLogin}>
                     <div className="auth-card-head">
                       <span className="auth-card-tag">Welcome Back</span>
                       <h2>Log In</h2>
-                      <p>Pick up where you left off across worlds, inventory, and creator tools.</p>
+                      <p>Pick up where you left off.</p>
                     </div>
                     <label className="auth-field">
                       <span>Email or Username</span>
