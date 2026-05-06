@@ -70,25 +70,25 @@ export function RuntimePlaza({ mapData, playerPosition, playerFacing, playerCoun
     }
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#20113b");
-    scene.fog = new THREE.Fog("#140f28", 26, 110);
+    scene.background = new THREE.Color("#161a1f");
+    scene.fog = new THREE.Fog("#13171c", 34, 120);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.18;
+    renderer.toneMappingExposure = 1.05;
     container.appendChild(renderer.domElement);
 
     const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 220);
     camera.position.set(0, 8, 12);
 
-    const hemiLight = new THREE.HemisphereLight("#8dc5ff", "#153a1c", 1.1);
+    const hemiLight = new THREE.HemisphereLight("#a7b8c6", "#1d221f", 1.05);
     scene.add(hemiLight);
 
-    const keyLight = new THREE.DirectionalLight("#fff2cf", 1.45);
-    keyLight.position.set(12, 20, 10);
+    const keyLight = new THREE.DirectionalLight("#f4ead8", 1.32);
+    keyLight.position.set(14, 21, 12);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.set(2048, 2048);
     keyLight.shadow.camera.left = -35;
@@ -97,25 +97,47 @@ export function RuntimePlaza({ mapData, playerPosition, playerFacing, playerCoun
     keyLight.shadow.camera.bottom = -35;
     scene.add(keyLight);
 
-    const rimLight = new THREE.PointLight("#5eead4", 2.6, 60, 2);
-    rimLight.position.set(-10, 9, -12);
+    const rimLight = new THREE.PointLight("#87b9ad", 1.6, 52, 2);
+    rimLight.position.set(-10, 8, -12);
     scene.add(rimLight);
 
-    const magentaLight = new THREE.PointLight("#c084fc", 2.1, 55, 2);
-    magentaLight.position.set(14, 10, 8);
-    scene.add(magentaLight);
+    const amberLight = new THREE.PointLight("#d7ab6a", 1.35, 46, 2);
+    amberLight.position.set(12, 8, 10);
+    scene.add(amberLight);
+
+    const skyDome = new THREE.Mesh(
+      new THREE.SphereGeometry(120, 32, 24),
+      new THREE.MeshBasicMaterial({ color: "#1d232b", side: THREE.BackSide }),
+    );
+    scene.add(skyDome);
+
+    const distantRing = new THREE.Mesh(
+      new THREE.TorusGeometry(30, 2.8, 18, 64),
+      new THREE.MeshStandardMaterial({ color: "#20262d", roughness: 0.96, metalness: 0.02 }),
+    );
+    distantRing.rotation.x = Math.PI / 2;
+    distantRing.position.y = -0.4;
+    scene.add(distantRing);
 
     const ground = new THREE.Mesh(
       new THREE.CircleGeometry(26, 64),
-      new THREE.MeshStandardMaterial({ color: "#26c151", roughness: 0.9, metalness: 0.05 }),
+      new THREE.MeshStandardMaterial({ color: "#2d5741", roughness: 0.96, metalness: 0.02 }),
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
 
+    const outerWalk = new THREE.Mesh(
+      new THREE.RingGeometry(17.2, 22.5, 64),
+      new THREE.MeshStandardMaterial({ color: "#353e47", roughness: 0.92, metalness: 0.03 }),
+    );
+    outerWalk.rotation.x = -Math.PI / 2;
+    outerWalk.position.y = 0.03;
+    scene.add(outerWalk);
+
     const plazaBase = new THREE.Mesh(
       new THREE.CylinderGeometry(16, 17.8, 1.2, 8),
-      new THREE.MeshStandardMaterial({ color: "#7f89c9", roughness: 0.62, metalness: 0.08 }),
+      new THREE.MeshStandardMaterial({ color: "#6f7883", roughness: 0.82, metalness: 0.04 }),
     );
     plazaBase.position.y = 0.55;
     plazaBase.receiveShadow = true;
@@ -123,7 +145,7 @@ export function RuntimePlaza({ mapData, playerPosition, playerFacing, playerCoun
 
     const plazaDeck = new THREE.Mesh(
       new THREE.CylinderGeometry(14.8, 16.2, 0.24, 8),
-      new THREE.MeshStandardMaterial({ color: "#b5b8f2", roughness: 0.5, metalness: 0.08 }),
+      new THREE.MeshStandardMaterial({ color: "#a7adb8", roughness: 0.66, metalness: 0.04 }),
     );
     plazaDeck.position.y = 1.12;
     plazaDeck.receiveShadow = true;
@@ -131,7 +153,7 @@ export function RuntimePlaza({ mapData, playerPosition, playerFacing, playerCoun
 
     const plazaRing = new THREE.Mesh(
       new THREE.RingGeometry(6.2, 10.8, 64),
-      new THREE.MeshStandardMaterial({ color: "#5964b6", roughness: 0.4, metalness: 0.12 }),
+      new THREE.MeshStandardMaterial({ color: "#59626c", roughness: 0.54, metalness: 0.08 }),
     );
     plazaRing.rotation.x = -Math.PI / 2;
     plazaRing.position.y = 1.14;
@@ -139,7 +161,7 @@ export function RuntimePlaza({ mapData, playerPosition, playerFacing, playerCoun
 
     const path = new THREE.Mesh(
       new THREE.BoxGeometry(12, 0.15, 5),
-      new THREE.MeshStandardMaterial({ color: "#f59e0b", roughness: 0.72, metalness: 0.02 }),
+      new THREE.MeshStandardMaterial({ color: "#a98757", roughness: 0.9, metalness: 0.02 }),
     );
     path.position.set(10, 1.18, 13);
     path.rotation.y = -0.35;
@@ -173,7 +195,7 @@ export function RuntimePlaza({ mapData, playerPosition, playerFacing, playerCoun
 
     const fountainBase = new THREE.Mesh(
       new THREE.CylinderGeometry(3.2, 3.8, 0.9, 24),
-      new THREE.MeshStandardMaterial({ color: "#d4dcff", roughness: 0.34, metalness: 0.1 }),
+      new THREE.MeshStandardMaterial({ color: "#c7ccd4", roughness: 0.52, metalness: 0.06 }),
     );
     fountainBase.position.set(0, 1.55, 0);
     fountainBase.castShadow = true;
@@ -182,26 +204,26 @@ export function RuntimePlaza({ mapData, playerPosition, playerFacing, playerCoun
 
     const fountainBowl = new THREE.Mesh(
       new THREE.CylinderGeometry(2.2, 2.9, 0.5, 24),
-      new THREE.MeshStandardMaterial({ color: "#87d6ff", emissive: "#103e59", emissiveIntensity: 0.3, roughness: 0.2, metalness: 0.35 }),
+      new THREE.MeshStandardMaterial({ color: "#84a6b8", emissive: "#1c2d37", emissiveIntensity: 0.16, roughness: 0.34, metalness: 0.22 }),
     );
     fountainBowl.position.set(0, 2.15, 0);
     scene.add(fountainBowl);
 
     const fountainCore = new THREE.Mesh(
       new THREE.CylinderGeometry(0.45, 0.65, 2.2, 16),
-      new THREE.MeshStandardMaterial({ color: "#f8fafc", roughness: 0.28, metalness: 0.18 }),
+      new THREE.MeshStandardMaterial({ color: "#d5d9df", roughness: 0.42, metalness: 0.12 }),
     );
     fountainCore.position.set(0, 2.9, 0);
     scene.add(fountainCore);
 
     const fountainTop = new THREE.Mesh(
       new THREE.SphereGeometry(0.74, 18, 14),
-      new THREE.MeshStandardMaterial({ color: "#7dd3fc", emissive: "#0c4a6e", emissiveIntensity: 0.55, roughness: 0.18, metalness: 0.28 }),
+      new THREE.MeshStandardMaterial({ color: "#9ab6c5", emissive: "#2e414c", emissiveIntensity: 0.24, roughness: 0.28, metalness: 0.14 }),
     );
     fountainTop.position.set(0, 4.25, 0);
     scene.add(fountainTop);
 
-    const shopText = buildNameSprite("SHOP", "rgba(34, 211, 238, 0.92)");
+    const shopText = buildNameSprite("SHOP", "rgba(38, 50, 63, 0.96)");
     shopText.position.set(0, 8.6, -9.6);
     shopText.scale.set(4.8, 1.7, 1);
     scene.add(shopText);
@@ -224,14 +246,32 @@ export function RuntimePlaza({ mapData, playerPosition, playerFacing, playerCoun
       const lantern = new THREE.Mesh(
         lanternGeometry,
         new THREE.MeshStandardMaterial({
-          color: index % 2 === 0 ? "#f59e0b" : "#fb7185",
-          emissive: index % 2 === 0 ? "#a65402" : "#8f1f4f",
-          emissiveIntensity: 1.4,
+          color: index % 2 === 0 ? "#d9bc89" : "#b9a7c6",
+          emissive: index % 2 === 0 ? "#6a5432" : "#4f4457",
+          emissiveIntensity: 0.86,
         }),
       );
       lantern.position.set(Math.cos(angle) * 12.3, 7.5, Math.sin(angle) * 12.3);
       lantern.castShadow = true;
       scene.add(lantern);
+    }
+
+    for (let index = 0; index < 8; index += 1) {
+      const fromAngle = (index / 8) * Math.PI * 2;
+      const toAngle = ((index + 1) / 8) * Math.PI * 2;
+      const points = [
+        new THREE.Vector3(Math.cos(fromAngle) * 13.8, 8.05, Math.sin(fromAngle) * 13.8),
+        new THREE.Vector3(
+          Math.cos((fromAngle + toAngle) / 2) * 13.1,
+          7.25,
+          Math.sin((fromAngle + toAngle) / 2) * 13.1,
+        ),
+        new THREE.Vector3(Math.cos(toAngle) * 13.8, 8.05, Math.sin(toAngle) * 13.8),
+      ];
+      const curve = new THREE.CatmullRomCurve3(points);
+      const geometry = new THREE.TubeGeometry(curve, 12, 0.05, 6, false);
+      const wire = new THREE.Mesh(geometry, wireMaterial);
+      scene.add(wire);
     }
 
     for (let index = 0; index < 4; index += 1) {
@@ -253,18 +293,18 @@ export function RuntimePlaza({ mapData, playerPosition, playerFacing, playerCoun
       const booth = new THREE.Mesh(
         boothGeometry,
         new THREE.MeshStandardMaterial({
-          color: index % 2 === 0 ? "#ea580c" : "#0ea5e9",
-          roughness: 0.58,
-          metalness: 0.1,
+          color: index % 2 === 0 ? "#8e5c3e" : "#48667a",
+          roughness: 0.74,
+          metalness: 0.04,
         }),
       );
       booth.castShadow = true;
       const roof = new THREE.Mesh(
         new THREE.BoxGeometry(4, 0.36, 2.8),
-        new THREE.MeshStandardMaterial({ color: "#fef3c7", roughness: 0.74, metalness: 0.02 }),
+        new THREE.MeshStandardMaterial({ color: "#d7ceb9", roughness: 0.88, metalness: 0.01 }),
       );
       roof.position.y = 1.55;
-      const boothSign = buildNameSprite(index % 2 === 0 ? "UPGRADES" : "CRATES", "rgba(17, 24, 39, 0.88)");
+      const boothSign = buildNameSprite(index % 2 === 0 ? "UPGRADES" : "CRATES", "rgba(24, 28, 32, 0.92)");
       boothSign.position.set(0, 2.9, 0);
       boothSign.scale.set(2.2, 0.86, 1);
       boothGroup.add(booth, roof, boothSign);
@@ -275,7 +315,7 @@ export function RuntimePlaza({ mapData, playerPosition, playerFacing, playerCoun
 
     const trunkGeometry = new THREE.CylinderGeometry(0.22, 0.32, 2.6, 8);
     const trunkMaterial = new THREE.MeshStandardMaterial({ color: "#6b4b28", roughness: 0.96, metalness: 0.01 });
-    const leafMaterial = new THREE.MeshStandardMaterial({ color: "#3ddc70", roughness: 0.84, metalness: 0.01 });
+    const leafMaterial = new THREE.MeshStandardMaterial({ color: "#55775f", roughness: 0.92, metalness: 0.01 });
     for (let index = 0; index < 14; index += 1) {
       const angle = (index / 14) * Math.PI * 2;
       const radius = 20 + (index % 3) * 1.5;
