@@ -2077,6 +2077,8 @@ select {
   align-items: center;
   gap: 3px;
   animation: av-float 3s ease-in-out infinite;
+  transform-origin: center top;
+  scale: calc(var(--av-height-scale, 1));
 }
 
 @keyframes av-float {
@@ -2094,6 +2096,8 @@ select {
   box-shadow:
     9px 6px 0 rgba(0,0,0,0.36),
     2px -8px 0 rgba(255,255,255,0.2);
+  scale: calc(var(--av-head-scale, 1));
+  transform-origin: center bottom;
 }
 
 /* Eyes */
@@ -2146,7 +2150,7 @@ select {
   gap: 2px;
 }
 .av-arm {
-  width: 18px;
+  width: calc(18px + (var(--av-body-type, 0) * 7px));
   height: 74px;
   border-radius: 4px;
   background: var(--av-shirt, #f97316);
@@ -2154,7 +2158,7 @@ select {
 }
 .av-body {
   position: relative;
-  width: 60px;
+  width: calc(60px + (var(--av-body-type, 0) * 22px));
   height: 74px;
   border-radius: 5px;
   background: var(--av-shirt, #f97316);
@@ -2169,7 +2173,7 @@ select {
   gap: 4px;
 }
 .av-leg {
-  width: 27px;
+  width: calc(27px + (var(--av-body-type, 0) * 8px));
   height: 58px;
   border-radius: 0 0 5px 5px;
   background: var(--av-pants, #1d4ed8);
@@ -2191,6 +2195,64 @@ select {
   font-size: 0.72rem;
   font-weight: 600;
   z-index: 4;
+}
+
+.av-wearable {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0.15rem 0.35rem;
+  border-radius: 999px;
+  background: rgba(13, 17, 22, 0.88);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+  z-index: 3;
+}
+
+.av-wearable span {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.av-wearable-hat {
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.av-wearable-face {
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.av-wearable-neck {
+  top: 74px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.av-wearable-shoulder {
+  top: 94px;
+  right: -14px;
+}
+
+.av-wearable-back {
+  top: 96px;
+  left: -18px;
+}
+
+.av-wearable-waist {
+  top: 150px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.av-wearable-gear {
+  top: 112px;
+  right: -22px;
 }
 
 .avatar-stage-identity {
@@ -3569,6 +3631,53 @@ select {
   color: var(--muted);
 }
 
+.av-slot-panel {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.15rem;
+  padding-top: 0.2rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.av-slot-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.av-slot-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.av-slot-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+}
+
+.av-slot-card-filled {
+  border-color: rgba(132, 199, 183, 0.22);
+  background: rgba(132, 199, 183, 0.06);
+}
+
+.av-slot-card strong,
+.av-slot-card span {
+  display: block;
+}
+
+.av-slot-card span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 .av-outfits-card {
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: var(--radius);
@@ -3786,6 +3895,14 @@ select {
   text-overflow: ellipsis;
   display: block;
   border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.av-item-slot {
+  font-size: 0.68rem;
+  color: var(--muted);
+  padding: 0.05rem 0.4rem 0;
+  display: block;
   background: var(--panel);
 }
 

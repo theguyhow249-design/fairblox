@@ -930,10 +930,13 @@ class InMemoryStore implements Store {
   }
 
   async login(input: LoginRequest): Promise<AuthResponse> {
-    const username = input.username.trim().toLowerCase();
-    const user = this.users.get(username);
+    const identity = String(input.identifier ?? input.username ?? input.email ?? "").trim().toLowerCase();
+    let user = this.users.get(identity);
+    if (!user) {
+      user = [...this.users.values()].find((candidate) => candidate.email === identity);
+    }
     if (!user || user.passwordHash !== hashPassword(input.password)) {
-      throw new Error("Invalid username or password.");
+      throw new Error("Invalid email/username or password.");
     }
     return this.issueAuthResponse(user);
   }
@@ -1759,23 +1762,23 @@ class PostgresStore implements Store {
   }
 
   async login(input: LoginRequest): Promise<AuthResponse> {
-    const username = input.username.trim().toLowerCase();
+    const identity = String(input.identifier ?? input.username ?? input.email ?? "").trim().toLowerCase();
     const result = await this.pool.query(
       `
       SELECT u.id, u.password_hash, u.role, u.username, p.display_name, p.bio, p.avatar_preset, p.coins
       FROM users u
       JOIN profiles p ON p.user_id = u.id
-      WHERE u.username = $1
+      WHERE u.username = $1 OR u.email = $1
       LIMIT 1
       `,
-      [username],
+      [identity],
     );
     if (!result.rowCount) {
-      throw new Error("Invalid username or password.");
+      throw new Error("Invalid email/username or password.");
     }
     const row = result.rows[0];
     if (row.password_hash !== hashPassword(input.password)) {
-      throw new Error("Invalid username or password.");
+      throw new Error("Invalid email/username or password.");
     }
     const profile: ProfileSummary = {
       id: row.id,

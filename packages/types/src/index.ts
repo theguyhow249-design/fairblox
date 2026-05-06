@@ -70,7 +70,10 @@ export interface SignupRequest {
 }
 
 export interface LoginRequest {
-  username: string;
+  // Use identifier for new clients; username/email remain for backward compatibility.
+  identifier?: string;
+  username?: string;
+  email?: string;
   password: string;
 }
 

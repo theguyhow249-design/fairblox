@@ -25,6 +25,7 @@ import type {
   CurrencyPurchaseCheckoutRequest,
   CurrencyPurchaseCheckoutResponse,
   CurrencyPurchaseOrderResponse,
+  PurchaseCurrencyRequest,
   PurchaseMarketplaceItemRequest,
   SaveMapRequest,
   ProfileSummary,
@@ -521,6 +522,17 @@ const GENRE_EMOJIS: Record<string, string> = {
 const AVATAR_FACES = ["Classic Smile", "Wink", "Focused", "Builder"];
 const AVATAR_ACCESSORIES = ["Builder Cap", "Cloud Wings", "Neon Blade", "Pixel Boombox"];
 const AVATAR_AURAS = ["None", "Neon", "Flame", "Frost"] as const;
+const AVATAR_WEARABLE_SLOTS: readonly AvatarWearableSlotKey[] = ["hat", "face", "neck", "shoulder", "back", "waist", "gear"];
+const AVATAR_WEARABLE_SLOT_LABELS: Record<AvatarWearableSlotKey, string> = {
+  hat: "Hat",
+  face: "Face",
+  neck: "Neck",
+  shoulder: "Shoulder",
+  back: "Back",
+  waist: "Waist",
+  gear: "Gear",
+};
+const AVATAR_RIG_STORAGE_KEY = "fairblox.avatarRig";
 
 type AvatarEditorTab = "Recent" | "Avatars" | "Body" | "Makeup" | "Clothing" | "Accessories" | "Animations";
 const AVATAR_EDITOR_TABS: readonly AvatarEditorTab[] = ["Recent", "Avatars", "Body", "Makeup", "Clothing", "Accessories", "Animations"];
@@ -530,6 +542,21 @@ type AvatarCatalogDef = {
   cat: "Avatars" | "Body" | "Makeup" | "Clothing" | "Accessories" | "Animations";
   kind: "skin" | "face" | "shirt" | "pants" | "accessory" | "preset" | "animation";
   val: string; price?: number; limited?: boolean;
+};
+
+type AvatarWearableSlotKey = "hat" | "face" | "neck" | "shoulder" | "back" | "waist" | "gear";
+
+type AvatarRigDraft = {
+  bodyType: number;
+  heightScale: number;
+  headScale: number;
+  animationStyle: string;
+  wearables: Record<AvatarWearableSlotKey, string | null>;
+};
+
+type AvatarRigSlot = {
+  id: string;
+  rig: AvatarRigDraft;
 };
 
 const AVATAR_CATALOG_DEFS: AvatarCatalogDef[] = [
@@ -579,6 +606,81 @@ const DEFAULT_AVATAR_DRAFT: AvatarDraft = {
   face: AVATAR_FACES[0],
   accessory: AVATAR_ACCESSORIES[0],
 };
+
+function createEmptyWearables(): AvatarRigDraft["wearables"] {
+  return {
+    hat: null,
+    face: null,
+    neck: null,
+    shoulder: null,
+    back: null,
+    waist: null,
+    gear: null,
+  };
+}
+
+function getWearableSlotForItem(item: Pick<MarketplaceItem, "category" | "modelKind">): AvatarWearableSlotKey {
+  if (item.category === "Back" || item.modelKind === "wings") {
+    return "back";
+  }
+  if (item.category === "Face" || item.modelKind === "glasses") {
+    return "face";
+  }
+  if (item.category === "Gear" || item.modelKind === "blade") {
+    return "gear";
+  }
+  if (item.modelKind === "boombox" || item.modelKind === "dino") {
+    return "shoulder";
+  }
+  if (item.modelKind === "chain") {
+    return "neck";
+  }
+  if (item.modelKind === "halo") {
+    return "hat";
+  }
+  return "hat";
+}
+
+function createAvatarRigDraft(options?: Partial<AvatarRigDraft>): AvatarRigDraft {
+  return {
+    bodyType: 12,
+    heightScale: 62,
+    headScale: 58,
+    animationStyle: "Default",
+    wearables: {
+      ...createEmptyWearables(),
+      ...(options?.wearables ?? {}),
+    },
+  };
+}
+
+function createAvatarRigDraftFromAvatarDraft(draft: AvatarDraft): AvatarRigDraft {
+  const wearables = createEmptyWearables();
+  const matchingItem = MARKETPLACE_ITEMS.find((item) => item.name === draft.accessory);
+  if (matchingItem) {
+    wearables[getWearableSlotForItem(matchingItem)] = matchingItem.id;
+  }
+  return createAvatarRigDraft({ wearables });
+}
+
+function syncAvatarRigSlots(nextAvatarSlots: AvatarSlot[], existingRigSlots: AvatarRigSlot[]): AvatarRigSlot[] {
+  return nextAvatarSlots.map((slot, index) => {
+    const current = existingRigSlots.find((entry) => entry.id === slot.id);
+    if (current) {
+      return current;
+    }
+    const fallbackWearable = index === 0 ? "builder-cap" : null;
+    return {
+      id: slot.id,
+      rig: createAvatarRigDraft({
+        wearables: {
+          ...createAvatarRigDraftFromAvatarDraft(slot.draft).wearables,
+          hat: fallbackWearable ?? createAvatarRigDraftFromAvatarDraft(slot.draft).wearables.hat,
+        },
+      }),
+    };
+  });
+}
 
 const AVATAR_PRESETS: Array<{ label: string; draft: AvatarDraft }> = [
   {
@@ -639,6 +741,46 @@ function createDefaultAvatarSlots(): AvatarSlot[] {
         face: "Wink",
         accessory: "Cloud Wings",
       },
+    },
+  ];
+}
+
+function createDefaultAvatarRigSlots(): AvatarRigSlot[] {
+  return [
+    {
+      id: "slot-1",
+      rig: createAvatarRigDraft({
+        wearables: {
+          ...createEmptyWearables(),
+          hat: "builder-cap",
+        },
+      }),
+    },
+    {
+      id: "slot-2",
+      rig: createAvatarRigDraft({
+        bodyType: 28,
+        heightScale: 68,
+        headScale: 52,
+        animationStyle: "Swagger",
+        wearables: {
+          ...createEmptyWearables(),
+          gear: "neon-blade",
+        },
+      }),
+    },
+    {
+      id: "slot-3",
+      rig: createAvatarRigDraft({
+        bodyType: 18,
+        heightScale: 64,
+        headScale: 56,
+        animationStyle: "Ninja",
+        wearables: {
+          ...createEmptyWearables(),
+          back: "cloud-wings",
+        },
+      }),
     },
   ];
 }
@@ -1027,7 +1169,7 @@ export function App() {
     displayName: "",
   });
   const [loginForm, setLoginForm] = useState<LoginRequest>({
-    username: "",
+    identifier: "",
     password: "",
   });
   const [gameForm, setGameForm] = useState<CreateGameRequest>({
@@ -1072,6 +1214,25 @@ export function App() {
   const [avatarDraft, setAvatarDraft] = useState<AvatarDraft>({ ...DEFAULT_AVATAR_DRAFT });
   const [activeAvatarSlotId, setActiveAvatarSlotId] = useState<string>("slot-1");
   const [avatarSlots, setAvatarSlots] = useState<AvatarSlot[]>(createDefaultAvatarSlots());
+  const [avatarRigSlots, setAvatarRigSlots] = useState<AvatarRigSlot[]>(() => {
+    try {
+      const raw = localStorage.getItem(AVATAR_RIG_STORAGE_KEY);
+      if (!raw) {
+        return createDefaultAvatarRigSlots();
+      }
+      const parsed = JSON.parse(raw) as AvatarRigSlot[];
+      if (!Array.isArray(parsed)) {
+        return createDefaultAvatarRigSlots();
+      }
+      return syncAvatarRigSlots(createDefaultAvatarSlots(), parsed);
+    } catch {
+      return createDefaultAvatarRigSlots();
+    }
+  });
+  const [avatarRigDraft, setAvatarRigDraft] = useState<AvatarRigDraft>(() => {
+    const initial = createDefaultAvatarRigSlots()[0];
+    return initial?.rig ?? createAvatarRigDraft();
+  });
   const [avatarEditorTab, setAvatarEditorTab] = useState<AvatarEditorTab>("Recent");
   const [viewingGame, setViewingGame] = useState<GameCard | null>(null);
   const [viewingCreatorName, setViewingCreatorName] = useState<string>("");
@@ -1340,6 +1501,12 @@ export function App() {
     setAvatarDraft(data.state.avatarDraft ?? activeSlot.draft);
     setActiveAvatarSlotId(nextActiveSlotId);
     setAvatarSlots(nextSlots);
+    const nextRigSlots = syncAvatarRigSlots(nextSlots, avatarRigSlots);
+    const activeRigSlot = nextRigSlots.find((slot) => slot.id === nextActiveSlotId) ?? nextRigSlots[0];
+    setAvatarRigSlots(nextRigSlots);
+    if (activeRigSlot) {
+      setAvatarRigDraft(activeRigSlot.rig);
+    }
     setProfile((current) => (current ? { ...current, coins: data.state.walletCoins } : current));
     loadEconomySummary(activeToken);
   }
@@ -1380,6 +1547,18 @@ export function App() {
       // Economy presentation settings stay in-memory if storage fails.
     }
   }, [coinName, coinSymbol, marketFeePercent, premiumPrice, avatarAlias, avatarMotto, avatarAura]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(AVATAR_RIG_STORAGE_KEY, JSON.stringify(avatarRigSlots));
+    } catch {
+      // Avatar rig stays local-only if storage fails.
+    }
+  }, [avatarRigSlots]);
+
+  useEffect(() => {
+    setAvatarRigSlots((current) => syncAvatarRigSlots(avatarSlots, current));
+  }, [avatarSlots]);
 
   useEffect(() => {
     try {
@@ -1466,14 +1645,34 @@ export function App() {
       return;
     }
     let cancelled = false;
+    let attempt = 0;
+    const maxAttempts = 15;
+
+    const scheduleNextPoll = () => {
+      const delayMs = Math.min(7000, 1500 + attempt * 500);
+      window.setTimeout(() => {
+        if (!cancelled) {
+          void pollOrder();
+        }
+      }, delayMs);
+    };
+
     const pollOrder = async () => {
+      attempt += 1;
       try {
         const response = await fetch(`${API_BASE}/payments/currency/orders/${pendingCurrencyOrderId}`, {
           headers: {
             "x-session-token": sessionToken,
           },
         });
-        const data = (await response.json()) as CurrencyPurchaseOrderResponse | ApiError;
+
+        let data: CurrencyPurchaseOrderResponse | ApiError;
+        try {
+          data = (await response.json()) as CurrencyPurchaseOrderResponse | ApiError;
+        } catch {
+          throw new Error("Could not read purchase status from server.");
+        }
+
         if (!response.ok || "error" in data) {
           throw new Error("error" in data ? data.error : "Could not load purchase order");
         }
@@ -1502,19 +1701,32 @@ export function App() {
         if (data.order.status === "failed") {
           throw new Error("Payment failed before wallet fulfillment.");
         }
-        window.setTimeout(() => {
-          if (!cancelled) {
-            void pollOrder();
-          }
-        }, 2000);
+
+        if (attempt >= maxAttempts) {
+          setIsBuyingCurrency(false);
+          setStoreMessage("Still waiting for Stripe confirmation. Keep this tab open and we will resume checks after refresh.");
+          return;
+        }
+
+        setStoreMessage(`Confirming payment with Stripe (${attempt}/${maxAttempts})...`);
+        scheduleNextPoll();
       } catch (error: unknown) {
         if (cancelled) {
           return;
         }
+
+        if (attempt < maxAttempts) {
+          setStoreMessage(`Purchase is processing. Retrying confirmation (${attempt}/${maxAttempts})...`);
+          scheduleNextPoll();
+          return;
+        }
+
         setIsBuyingCurrency(false);
         setStoreMessage(error instanceof Error ? error.message : "Could not confirm purchase.");
       }
     };
+
+    setStoreMessage("Confirming your purchase...");
     void pollOrder();
     return () => {
       cancelled = true;
@@ -1838,6 +2050,9 @@ export function App() {
       setAvatarDraft({ ...defaultSlots[0].draft });
       setActiveAvatarSlotId(defaultSlots[0].id);
       setAvatarSlots(defaultSlots);
+      const defaultRigSlots = createDefaultAvatarRigSlots();
+      setAvatarRigSlots(defaultRigSlots);
+      setAvatarRigDraft(defaultRigSlots[0]?.rig ?? createAvatarRigDraft());
       setEconomySummary({
         creatorGrossCoins: 0,
         creatorNetCoins: 0,
@@ -1857,6 +2072,9 @@ export function App() {
         setAvatarDraft(fallback.avatarDraft);
         setActiveAvatarSlotId(fallback.activeAvatarSlotId);
         setAvatarSlots(fallback.avatarSlots);
+        const fallbackRigSlots = syncAvatarRigSlots(fallback.avatarSlots, avatarRigSlots);
+        setAvatarRigSlots(fallbackRigSlots);
+        setAvatarRigDraft((fallbackRigSlots.find((slot) => slot.id === fallback.activeAvatarSlotId) ?? fallbackRigSlots[0])?.rig ?? createAvatarRigDraft());
         setProfile((current) => (current ? { ...current, coins: fallback.walletCoins } : current));
         loadEconomySummary(sessionToken);
       });
@@ -3002,7 +3220,40 @@ export function App() {
       });
       const data = (await response.json()) as CurrencyPurchaseCheckoutResponse | ApiError;
       if (!response.ok || "error" in data) {
-        throw new Error("error" in data ? data.error : "Could not create checkout");
+        const errorMessage = "error" in data ? data.error : "Could not create checkout";
+        const stripeUnavailable = response.status === 503 || /stripe is not configured/i.test(errorMessage);
+        if (!stripeUnavailable) {
+          throw new Error(errorMessage);
+        }
+
+        const fallbackPayload: PurchaseCurrencyRequest = {
+          coins,
+          usdCents,
+          provider: "simulated",
+          requestId: crypto.randomUUID(),
+        };
+        const fallbackResponse = await fetch(`${API_BASE}/economy/purchase-currency`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-session-token": sessionToken,
+          },
+          body: JSON.stringify(fallbackPayload),
+        });
+        const fallbackData = (await fallbackResponse.json()) as AccountStateResponse | ApiError;
+        if (!fallbackResponse.ok || "error" in fallbackData) {
+          throw new Error("error" in fallbackData ? fallbackData.error : "Could not process fallback purchase");
+        }
+
+        setWalletCoins(fallbackData.state.walletCoins);
+        setOwnedItemIds(fallbackData.state.ownedItemIds);
+        setProfile((current) => (current ? { ...current, coins: fallbackData.state.walletCoins } : current));
+        pushTx(`Bought ${title}`, +coins);
+        pushToast(`${coins.toLocaleString()} ${coinMark} added to your wallet!`, "success");
+        setStoreMessage(`Purchase complete. ${coins.toLocaleString()} ${coinLabel} added.`);
+        setIsBuyingCurrency(false);
+        loadEconomySummary(sessionToken);
+        return;
       }
       setPendingCurrencyOrderId(data.order.id);
       try {
@@ -3048,6 +3299,14 @@ export function App() {
 
   function applyAvatarPreset(label: string, draft: AvatarDraft) {
     updateAvatarDraft({ ...draft }, `${label} preset applied.`);
+    const presetRig = createAvatarRigDraftFromAvatarDraft(draft);
+    const nextRigSlots = avatarRigSlots.map((slot) => (
+      slot.id === activeAvatarSlotId
+        ? { ...slot, rig: presetRig }
+        : slot
+    ));
+    setAvatarRigDraft(presetRig);
+    setAvatarRigSlots(nextRigSlots);
   }
 
   function randomizeAvatarDraft() {
@@ -3055,38 +3314,92 @@ export function App() {
       (item) => ownedItems.some((owned) => owned.name === item) || item === "Builder Cap",
     );
     const randomPick = <T,>(items: T[]) => items[Math.floor(Math.random() * items.length)] ?? items[0];
+    const randomAccessory = randomPick(availableAccessories);
     updateAvatarDraft(
       {
         skinTone: randomPick(SKIN_TONES),
         shirtColor: randomPick(AVATAR_COLOR_SWATCHES),
         pantsColor: randomPick(AVATAR_COLOR_SWATCHES),
         face: randomPick(AVATAR_FACES),
-        accessory: randomPick(availableAccessories),
+        accessory: randomAccessory,
       },
       "Avatar randomized.",
     );
+    const accessoryItem = allMarketItems.find((item) => item.name === randomAccessory) ?? null;
+    const nextRig: AvatarRigDraft = createAvatarRigDraft({
+      bodyType: Math.floor(Math.random() * 70),
+      heightScale: 48 + Math.floor(Math.random() * 36),
+      headScale: 44 + Math.floor(Math.random() * 28),
+      animationStyle: randomPick(["Default", "Swagger", "Ninja", "Dance"]),
+      wearables: accessoryItem
+        ? {
+            ...createEmptyWearables(),
+            [getWearableSlotForItem(accessoryItem)]: accessoryItem.id,
+          }
+        : createEmptyWearables(),
+    });
+    const nextRigSlots = avatarRigSlots.map((slot) => (
+      slot.id === activeAvatarSlotId
+        ? { ...slot, rig: nextRig }
+        : slot
+    ));
+    setAvatarRigDraft(nextRig);
+    setAvatarRigSlots(nextRigSlots);
   }
 
-  function equipOwnedAccessory(itemId: string) {
-    const accessory = ACCESSORY_CATALOG_ITEMS.find((item) => item.id === itemId);
-    if (!accessory) {
-      pushToast("Accessory not found.", "error");
+  function updateAvatarRigDraft(patch: Partial<AvatarRigDraft>, notice?: string) {
+    const nextRig: AvatarRigDraft = {
+      ...avatarRigDraft,
+      ...patch,
+      wearables: {
+        ...avatarRigDraft.wearables,
+        ...(patch.wearables ?? {}),
+      },
+    };
+    const nextRigSlots = avatarRigSlots.map((slot) => (
+      slot.id === activeAvatarSlotId
+        ? { ...slot, rig: nextRig }
+        : slot
+    ));
+    setAvatarRigDraft(nextRig);
+    setAvatarRigSlots(nextRigSlots);
+    if (notice) {
+      setAvatarMessage(notice);
+    }
+  }
+
+  function equipOwnedWearable(itemId: string) {
+    const item = allMarketItems.find((entry) => entry.id === itemId);
+    if (!item) {
+      pushToast("Wearable not found.", "error");
       return;
     }
     if (!ownedItemIds.includes(itemId)) {
-      pushToast(`You do not own ${accessory.name} yet.`, "error");
+      pushToast(`You do not own ${item.name} yet.`, "error");
       return;
     }
-    updateAvatarDraft({ accessory: accessory.val }, `${accessory.name} equipped.`);
+    const slotKey = getWearableSlotForItem(item);
+    updateAvatarRigDraft({
+      wearables: {
+        ...avatarRigDraft.wearables,
+        [slotKey]: item.id,
+      },
+    }, `${item.name} equipped to ${AVATAR_WEARABLE_SLOT_LABELS[slotKey]}.`);
+    updateAvatarDraft({ accessory: item.name }, `${item.name} equipped.`);
     setActiveView("avatar");
   }
 
+  function clearWearableSlot(slotKey: AvatarWearableSlotKey) {
+    updateAvatarRigDraft({
+      wearables: {
+        ...avatarRigDraft.wearables,
+        [slotKey]: null,
+      },
+    }, `${AVATAR_WEARABLE_SLOT_LABELS[slotKey]} cleared.`);
+  }
+
   function openAvatarShopForItem(item: AvatarCatalogDef) {
-    setMarketTab("shop");
-    setMarketCategory("All");
-    setMarketSearch(item.name);
-    setActiveView("inventory");
-    pushToast(`${item.name} is not in your inventory yet.`, "info");
+    setAvatarMessage(`${item.name} is not in your inventory yet. Buy it in the marketplace to equip it.`);
   }
 
   
@@ -3278,6 +3591,14 @@ export function App() {
 
   function resetAvatarDraft() {
     updateAvatarDraft({ ...DEFAULT_AVATAR_DRAFT }, "Avatar reset to default.");
+    const resetRig = createDefaultAvatarRigSlots()[0]?.rig ?? createAvatarRigDraft();
+    const nextRigSlots = avatarRigSlots.map((slot) => (
+      slot.id === activeAvatarSlotId
+        ? { ...slot, rig: resetRig }
+        : slot
+    ));
+    setAvatarRigDraft(resetRig);
+    setAvatarRigSlots(nextRigSlots);
   }
 
   function loadAvatarSlot(slotId: string) {
@@ -3285,8 +3606,10 @@ export function App() {
     if (!slot) {
       return;
     }
+    const rigSlot = avatarRigSlots.find((entry) => entry.id === slotId);
     setActiveAvatarSlotId(slotId);
     setAvatarDraft(slot.draft);
+    setAvatarRigDraft(rigSlot?.rig ?? createAvatarRigDraftFromAvatarDraft(slot.draft));
     setAvatarMessage(`${slot.name} loaded.`);
     void persistAccountState({ avatarDraft: slot.draft, activeAvatarSlotId: slotId, avatarSlots });
   }
@@ -3306,6 +3629,15 @@ export function App() {
     );
     setAvatarSlots(nextSlots);
     setActiveAvatarSlotId(slotId);
+    const nextRigSlots = avatarRigSlots.map((entry) =>
+      entry.id === slotId
+        ? {
+            ...entry,
+            rig: { ...avatarRigDraft, wearables: { ...avatarRigDraft.wearables } },
+          }
+        : entry,
+    );
+    setAvatarRigSlots(nextRigSlots);
     setAvatarMessage(`Saved to ${slot.name}.`);
     void persistAccountState({ avatarDraft: { ...avatarDraft }, activeAvatarSlotId: slotId, avatarSlots: nextSlots });
   }
@@ -3314,10 +3646,21 @@ export function App() {
   const visibleThreads = messageThreads.length > 0 ? messageThreads : MESSAGE_THREADS;
   const allMarketItems = marketItems;
   const accessoryCatalogByValue = new Map(ACCESSORY_CATALOG_ITEMS.map((item) => [item.val, item]));
+  const marketItemsById = new Map(allMarketItems.map((item) => [item.id, item]));
   const ownedItems = allMarketItems.filter((item) => ownedItemIds.includes(item.id));
   const ownedAccessoryCatalogItems = ACCESSORY_CATALOG_ITEMS.filter((item) => ownedItemIds.includes(item.id));
-  const equippedAccessoryItem = accessoryCatalogByValue.get(avatarDraft.accessory) ?? null;
-  const equippedMarketplaceItem = equippedAccessoryItem ? allMarketItems.find((item) => item.id === equippedAccessoryItem.id) ?? null : null;
+  const equippedWearableEntries = AVATAR_WEARABLE_SLOTS
+    .map((slotKey) => {
+      const itemId = avatarRigDraft.wearables[slotKey];
+      return itemId ? { slotKey, item: marketItemsById.get(itemId) ?? null } : null;
+    })
+    .filter((entry): entry is { slotKey: AvatarWearableSlotKey; item: MarketplaceItem } => Boolean(entry?.item));
+  const equippedAccessoryItem =
+    equippedWearableEntries[0]?.item
+    ?? (accessoryCatalogByValue.get(avatarDraft.accessory)
+      ? allMarketItems.find((item) => item.id === accessoryCatalogByValue.get(avatarDraft.accessory)?.id) ?? null
+      : null);
+  const equippedMarketplaceItem = equippedAccessoryItem;
   const normalizedDiscoverQuery = discoverQuery.trim().toLowerCase();
   const discoverGames = [...games]
     .filter((game) => {
@@ -3647,9 +3990,9 @@ export function App() {
                 <form onSubmit={handleLogin}>
                   <h2>Log in</h2>
                   <input
-                    placeholder="Username"
-                    value={loginForm.username}
-                    onChange={(event) => setLoginForm((current) => ({ ...current, username: event.target.value }))}
+                    placeholder="Email or Username"
+                    value={loginForm.identifier ?? ""}
+                    onChange={(event) => setLoginForm((current) => ({ ...current, identifier: event.target.value }))}
                   />
                   <input
                     placeholder="Password"
@@ -3658,7 +4001,7 @@ export function App() {
                     onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
                   />
                   <button type="submit">Login</button>
-                  <p className="hint">Demo account: `plutobuilds` / `demo123`</p>
+                  <p className="hint">Demo account: plutobuilds / demo123</p>
                 </form>
               </div>
               {authError ? <p className="error">{authError}</p> : null}
@@ -4141,20 +4484,32 @@ export function App() {
                   </div>
                 </div>
                 <div className="friends-grid">
-                  {homeFriends.map((friend) => (
-                    <article key={`friends-${friend.name}`} className={`friend-card friend-card-${friend.tone} friend-card-panel`}>
-                      <div className="friend-avatar-wrap">
-                        <div className="friend-avatar">{friend.name.slice(0, 1)}</div>
-                        <i className="friend-status-dot" />
-                      </div>
-                      <strong>{friend.name}</strong>
-                      <span>{friend.status}</span>
-                      <div className="friend-actions">
-                        <button type="button" onClick={() => setActiveView("messages")}>Message</button>
-                        <button type="button" className="secondary" onClick={() => setActiveView("home")}>Join</button>
-                      </div>
-                    </article>
-                  ))}
+                  {homeFriends.map((friend) => {
+                    const playingHeroGame = friend.status.includes("Playing") && heroGame;
+                    const editingGame = friend.status.includes("Editing") && recentDraft;
+                    return (
+                      <article key={`friends-${friend.name}`} className={`friend-card friend-card-${friend.tone} friend-card-panel`}>
+                        <div className="friend-avatar-wrap">
+                          <div className="friend-avatar">{friend.name.slice(0, 1)}</div>
+                          <i className="friend-status-dot" />
+                        </div>
+                        <strong>{friend.name}</strong>
+                        <span>{friend.status}</span>
+                        <div className="friend-actions">
+                          <button type="button" onClick={() => setActiveView("messages")}>Message</button>
+                          <button type="button" className="secondary" onClick={() => {
+                            if (playingHeroGame) {
+                              void joinPublicGameBySlug(heroGame.slug);
+                            } else if (editingGame) {
+                              setActiveView("creator");
+                            } else {
+                              pushToast("Friend is not in a joinable session right now.", "info");
+                            }
+                          }}>Join</button>
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
               </section>
             ) : null}
@@ -4176,7 +4531,14 @@ export function App() {
                       <div className="avatar-stage">
                         <div
                           className="avatar-figure"
-                          style={{"--av-skin": avatarDraft.skinTone, "--av-shirt": avatarDraft.shirtColor, "--av-pants": avatarDraft.pantsColor} as React.CSSProperties}
+                          style={{
+                            "--av-skin": avatarDraft.skinTone,
+                            "--av-shirt": avatarDraft.shirtColor,
+                            "--av-pants": avatarDraft.pantsColor,
+                            "--av-body-type": String(avatarRigDraft.bodyType / 100),
+                            "--av-height-scale": String(0.9 + avatarRigDraft.heightScale / 200),
+                            "--av-head-scale": String(0.9 + avatarRigDraft.headScale / 200),
+                          } as React.CSSProperties}
                         >
                           <div className="av-head">
                             <div className={`av-eyes av-eyes-${avatarDraft.face.toLowerCase().replace(/\s+/g, "-")}`} />
@@ -4190,21 +4552,43 @@ export function App() {
                             <div className="av-leg" />
                             <div className="av-leg" />
                           </div>
+                          {equippedWearableEntries.map(({ slotKey, item }) => (
+                            <div key={`${slotKey}-${item.id}`} className={`av-wearable av-wearable-${slotKey}`}>
+                              <span>{item.emoji}</span>
+                            </div>
+                          ))}
                         </div>
-                        <div className="av-accessory-tag">{avatarDraft.accessory}</div>
+                        <div className="av-accessory-tag">
+                          {equippedWearableEntries.length > 0 ? `${equippedWearableEntries.length} wearable${equippedWearableEntries.length > 1 ? "s" : ""} equipped` : "No wearables equipped"}
+                        </div>
                         <div className="avatar-stage-identity">
                           <strong>{avatarAlias.trim() || "Player"}</strong>
+                          <span>{avatarMotto.trim() || "Style your own rig."}</span>
                         </div>
                       </div>
                       <div className="av-stage-controls">
                         <div className="av-body-type-row">
                           <span className="tool-title">Body Type</span>
-                          <input type="range" min={0} max={100} defaultValue={0} className="av-body-slider" />
-                          <span className="tool-title">0%</span>
+                          <input type="range" min={0} max={100} value={avatarRigDraft.bodyType} className="av-body-slider" onChange={(evt) => updateAvatarRigDraft({ bodyType: Number(evt.target.value) })} />
+                          <span className="tool-title">{avatarRigDraft.bodyType}%</span>
+                        </div>
+                        <div className="av-body-type-row">
+                          <span className="tool-title">Height</span>
+                          <input type="range" min={0} max={100} value={avatarRigDraft.heightScale} className="av-body-slider" onChange={(evt) => updateAvatarRigDraft({ heightScale: Number(evt.target.value) })} />
+                          <span className="tool-title">{avatarRigDraft.heightScale}%</span>
+                        </div>
+                        <div className="av-body-type-row">
+                          <span className="tool-title">Head</span>
+                          <input type="range" min={0} max={100} value={avatarRigDraft.headScale} className="av-body-slider" onChange={(evt) => updateAvatarRigDraft({ headScale: Number(evt.target.value) })} />
+                          <span className="tool-title">{avatarRigDraft.headScale}%</span>
                         </div>
                         <label className="av-stage-label">
                           <span className="tool-title">Display Name</span>
                           <input value={avatarAlias} maxLength={28} onChange={(evt) => setAvatarAlias(evt.target.value)} placeholder="Player" />
+                        </label>
+                        <label className="av-stage-label">
+                          <span className="tool-title">Motto</span>
+                          <input value={avatarMotto} maxLength={48} onChange={(evt) => setAvatarMotto(evt.target.value)} placeholder="Style your own rig." />
                         </label>
                         <label className="av-stage-label">
                           <span className="tool-title">Aura</span>
@@ -4212,6 +4596,41 @@ export function App() {
                             {AVATAR_AURAS.map((aura) => <option key={aura} value={aura}>{aura}</option>)}
                           </select>
                         </label>
+                        <label className="av-stage-label">
+                          <span className="tool-title">Animation</span>
+                          <select value={avatarRigDraft.animationStyle} onChange={(evt) => updateAvatarRigDraft({ animationStyle: evt.target.value })}>
+                            {["Default", "Swagger", "Ninja", "Dance"].map((animation) => <option key={animation} value={animation}>{animation}</option>)}
+                          </select>
+                        </label>
+                        <div className="av-slot-panel">
+                          <div className="av-slot-panel-head">
+                            <span className="tool-title">Wearable Slots</span>
+                            <span>{equippedWearableEntries.length} active</span>
+                          </div>
+                          <div className="av-slot-grid">
+                            {AVATAR_WEARABLE_SLOTS.map((slotKey) => {
+                              const itemId = avatarRigDraft.wearables[slotKey];
+                              const item = itemId ? marketItemsById.get(itemId) ?? null : null;
+                              return (
+                                <article key={slotKey} className={item ? "av-slot-card av-slot-card-filled" : "av-slot-card"}>
+                                  <div>
+                                    <strong>{AVATAR_WEARABLE_SLOT_LABELS[slotKey]}</strong>
+                                    <span>{item ? item.name : "Empty"}</span>
+                                  </div>
+                                  {item ? (
+                                    <button type="button" className="secondary" onClick={() => clearWearableSlot(slotKey)}>
+                                      Clear
+                                    </button>
+                                  ) : (
+                                    <button type="button" className="secondary" onClick={() => { setAvatarEditorTab("Accessories"); setAvatarMessage(`Pick an item for ${AVATAR_WEARABLE_SLOT_LABELS[slotKey]}.`); }}>
+                                      Equip
+                                    </button>
+                                  )}
+                                </article>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <div className="av-outfits-card">
@@ -4228,7 +4647,7 @@ export function App() {
                           <div className="av-outfit-thumb" style={{background: slot.draft.shirtColor}} />
                           <div className="av-outfit-info">
                             <strong>{slot.name}</strong>
-                            <span>{slot.draft.face} · {slot.draft.accessory}</span>
+                            <span>{slot.draft.face} · {(avatarRigSlots.find((entry) => entry.id === slot.id)?.rig.wearables.back && marketItemsById.get(avatarRigSlots.find((entry) => entry.id === slot.id)?.rig.wearables.back ?? "")?.name) ?? slot.draft.accessory}</span>
                           </div>
                           <button
                             type="button"
@@ -4270,7 +4689,7 @@ export function App() {
                               (item.kind === "face" && avatarDraft.face === item.val) ||
                               (item.kind === "shirt" && avatarDraft.shirtColor === item.val) ||
                               (item.kind === "pants" && avatarDraft.pantsColor === item.val) ||
-                              (item.kind === "accessory" && avatarDraft.accessory === item.val);
+                              (item.kind === "accessory" && equippedWearableEntries.some((entry) => entry.item.id === item.id));
                             return (
                               <button
                                 key={item.id}
@@ -4281,7 +4700,9 @@ export function App() {
                                   else if (item.kind === "face") updateAvatarDraft({ face: item.val }, `${item.name} equipped.`);
                                   else if (item.kind === "shirt") updateAvatarDraft({ shirtColor: item.val }, `${item.name} equipped.`);
                                   else if (item.kind === "pants") updateAvatarDraft({ pantsColor: item.val }, `${item.name} equipped.`);
-                                  else if (item.kind === "accessory" && isOwned) updateAvatarDraft({ accessory: item.val }, `${item.name} equipped.`);
+                                  else if (item.kind === "accessory" && isOwned) {
+                                    equipOwnedWearable(item.id);
+                                  }
                                   else if (item.kind === "accessory") openAvatarShopForItem(item);
                                   else if (item.kind === "preset") {
                                     const p = AVATAR_PRESETS.find((pr) => pr.label === item.val);
@@ -4295,6 +4716,9 @@ export function App() {
                                   {isEquipped && <div className="av-item-check">✓</div>}
                                 </div>
                                 <span className="av-item-name">{item.name}</span>
+                                {item.kind === "accessory" ? (
+                                  <span className="av-item-slot">{AVATAR_WEARABLE_SLOT_LABELS[getWearableSlotForItem(MARKETPLACE_ITEMS.find((entry) => entry.id === item.id) ?? { category: "Accessory", modelKind: "custom" })]}</span>
+                                ) : null}
                                 {isOwned ? (
                                   <span className="av-item-owned">{isEquipped ? "Equipped" : "Owned"}</span>
                                 ) : item.price ? (
@@ -4473,8 +4897,8 @@ export function App() {
                     <span className="hint">Marketplace items in your locker</span>
                   </div>
                   <div className="inventory-summary-card">
-                    <span className="tool-title">Equipped accessory</span>
-                    <strong>{equippedMarketplaceItem?.name ?? avatarDraft.accessory}</strong>
+                    <span className="tool-title">Equipped wearables</span>
+                    <strong>{equippedWearableEntries.length > 0 ? equippedWearableEntries.map(({ item }) => item.name).join(", ") : "None"}</strong>
                     <span className="hint">{ownedAccessoryCatalogItems.length} owned accessories ready to equip</span>
                   </div>
                   <div className="inventory-summary-card inventory-summary-card-actions">
@@ -4492,7 +4916,8 @@ export function App() {
                     <div className="inventory-owned-grid">
                       {ownedItems.map((item) => {
                         const accessory = ACCESSORY_CATALOG_ITEMS.find((entry) => entry.id === item.id) ?? null;
-                        const isEquipped = equippedAccessoryItem?.id === item.id;
+                        const wearableSlot = getWearableSlotForItem(item);
+                        const isEquipped = equippedWearableEntries.some((entry) => entry.item.id === item.id);
                         return (
                           <article key={`owned-${item.id}`} className={isEquipped ? "inventory-owned-card inventory-owned-card-equipped" : "inventory-owned-card"}>
                             <div className="market-card-art inventory-owned-art" style={{ background: item.accent }}>
@@ -4502,13 +4927,13 @@ export function App() {
                             <div className="inventory-owned-body">
                               <strong>{item.name}</strong>
                               <span>By {item.creator}</span>
-                              <small>{item.category}</small>
+                              <small>{item.category} · {AVATAR_WEARABLE_SLOT_LABELS[wearableSlot]}</small>
                               <div className="inventory-owned-actions">
                                 {accessory ? (
                                   <button
                                     type="button"
                                     className={isEquipped ? "secondary" : ""}
-                                    onClick={() => equipOwnedAccessory(item.id)}
+                                    onClick={() => equipOwnedWearable(item.id)}
                                   >
                                     {isEquipped ? "Equipped" : "Equip"}
                                   </button>
@@ -4676,11 +5101,6 @@ export function App() {
                       onClick={() => setMarketCategory(cat)}
                     >
                       {cat}
-                    </button>
-                  ))}
-                  {["limited", "sale", "hats", "gear", "accessories"].map((tag) => (
-                    <button key={tag} type="button" className="market-tag secondary">
-                      {tag}
                     </button>
                   ))}
                 </div>
