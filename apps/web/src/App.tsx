@@ -1624,6 +1624,13 @@ export function App() {
   useEffect(() => {
     try {
       const url = new URL(window.location.href);
+      const authToken = url.searchParams.get("auth_token");
+      if (authToken) {
+        setSessionToken(authToken);
+        setIsRestoringSession(true);
+        setActiveView("home");
+        url.searchParams.delete("auth_token");
+      }
       const purchaseState = url.searchParams.get("purchase");
       if (purchaseState === "cancelled") {
         setIsBuyingCurrency(false);
@@ -4009,8 +4016,11 @@ export function App() {
       }
       if (status === "pending") {
         pushToast(`${provider} sign-in returned to Fairblox. Complete provider token exchange next.`, "info");
+      } else if (status === "success") {
+        pushToast(`${provider} sign-in connected. Restoring your account...`, "success");
       } else if (status === "error") {
-        pushToast(`${provider} sign-in was cancelled or rejected by the provider.`, "error");
+        const detail = url.searchParams.get("oauth_error");
+        pushToast(detail ? `${provider} sign-in failed: ${detail}` : `${provider} sign-in was cancelled or rejected by the provider.`, "error");
       }
       url.searchParams.delete("oauth");
       url.searchParams.delete("oauth_status");

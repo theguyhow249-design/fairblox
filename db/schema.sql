@@ -94,6 +94,15 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS oauth_accounts (
+    provider TEXT NOT NULL,
+    provider_user_id TEXT NOT NULL,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    email TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (provider, provider_user_id)
+);
+
 CREATE TABLE IF NOT EXISTS games (
     id UUID PRIMARY KEY,
     creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

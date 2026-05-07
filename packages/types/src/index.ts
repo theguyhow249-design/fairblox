@@ -80,6 +80,14 @@ export interface OAuthStartResponse {
   authUrl?: string;
 }
 
+export interface OAuthLoginRequest {
+  provider: OAuthProvider;
+  providerUserId: string;
+  email: string;
+  displayName: string;
+  usernameHint?: string;
+}
+
 export interface SignupRequest {
   email: string;
   username: string;

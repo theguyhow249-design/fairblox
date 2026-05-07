@@ -19,6 +19,7 @@ import type {
   MarketplaceItemRecord,
   MarketplaceWearableSlot,
   MarketplaceModelKind,
+  OAuthLoginRequest,
   PurchaseCurrencyRequest,
   PurchaseMarketplaceItemRequest,
   PublishedGameDetail,
@@ -54,6 +55,7 @@ type StoredUser = {
 type Store = {
   signup(input: SignupRequest): Promise<AuthResponse>;
   login(input: LoginRequest): Promise<AuthResponse>;
+  oauthLogin(input: OAuthLoginRequest): Promise<AuthResponse>;
   getProfileByUsername(username: string): Promise<ProfileSummary | null>;
   getProfileFromToken(token: string | undefined): Promise<ProfileSummary | null>;
   createGameDraft(token: string | undefined, input: CreateGameRequest): Promise<GameDraft>;
@@ -912,6 +914,7 @@ class InMemoryStore implements Store {
   private readonly favoriteCounts = new Map<string, number>();
   private readonly favoritesByUser = new Map<string, Set<string>>();
   private readonly followsByCreator = new Map<string, Set<string>>();
+  private readonly oauthAccounts = new Map<string, string>();
 
   constructor() {
     for (const item of OFFICIAL_MARKETPLACE_ITEMS) {
@@ -965,6 +968,44 @@ class InMemoryStore implements Store {
     if (!user || user.passwordHash !== hashPassword(input.password)) {
       throw new Error("Invalid email/username or password.");
     }
+    return this.issueAuthResponse(user);
+  }
+
+  async oauthLogin(input: OAuthLoginRequest): Promise<AuthResponse> {
+    const provider = input.provider.trim().toLowerCase();
+    const providerUserId = input.providerUserId.trim();
+    const email = input.email.trim().toLowerCase();
+    const displayName = input.displayName.trim();
+    if (!provider || !providerUserId || !displayName) {
+      throw new Error("OAuth identity is incomplete.");
+    }
+    const key = `${provider}:${providerUserId}`;
+    const existingUserId = this.oauthAccounts.get(key);
+    if (existingUserId) {
+      const existingUser = this.findUserById(existingUserId);
+      if (!existingUser) {
+        throw new Error("Linked OAuth account could not be resolved.");
+      }
+      return this.issueAuthResponse(existingUser);
+    }
+    let user = email ? [...this.users.values()].find((candidate) => candidate.email === email) ?? null : null;
+    if (!user) {
+      const username = this.uniqueUsername(slugify(input.usernameHint?.trim() || email.split("@")[0] || displayName) || `${provider}-player`);
+      user = {
+        id: randomUUID(),
+        email: email || `${provider}-${providerUserId}@oauth.fairblox.local`,
+        username,
+        passwordHash: hashPassword(randomUUID()),
+        displayName,
+        bio: `${displayName} joined with ${provider}.`,
+        avatarPreset: "starter",
+        coins: 250,
+        role: "creator",
+      };
+      this.users.set(username, user);
+      this.accountStates.set(user.id, createDefaultAccountState(user.coins));
+    }
+    this.oauthAccounts.set(key, user.id);
     return this.issueAuthResponse(user);
   }
 
@@ -1753,6 +1794,16 @@ class InMemoryStore implements Store {
     }
     return candidate;
   }
+
+  private uniqueUsername(base: string): string {
+    let candidate = base.trim().toLowerCase();
+    let index = 2;
+    while (this.users.has(candidate)) {
+      candidate = `${base}-${index}`.trim().toLowerCase();
+      index += 1;
+    }
+    return candidate;
+  }
 }
 
 class PostgresStore implements Store {
@@ -1817,6 +1868,110 @@ class PostgresStore implements Store {
       role: row.role,
     };
     return this.issueAuthResponse(profile.id, profile);
+  }
+
+  async oauthLogin(input: OAuthLoginRequest): Promise<AuthResponse> {
+    const provider = input.provider.trim().toLowerCase();
+    const providerUserId = input.providerUserId.trim();
+    const email = input.email.trim().toLowerCase();
+    const displayName = input.displayName.trim();
+    if (!provider || !providerUserId || !displayName) {
+      throw new Error("OAuth identity is incomplete.");
+    }
+    const linked = await this.pool.query(
+      `
+      SELECT u.id, u.username, u.role, p.display_name, p.bio, p.avatar_preset, p.coins
+      FROM oauth_accounts oa
+      JOIN users u ON u.id = oa.user_id
+      JOIN profiles p ON p.user_id = u.id
+      WHERE oa.provider = $1 AND oa.provider_user_id = $2
+      LIMIT 1
+      `,
+      [provider, providerUserId],
+    );
+    if (linked.rowCount) {
+      const row = linked.rows[0];
+      return this.issueAuthResponse(row.id, {
+        id: row.id,
+        username: row.username,
+        displayName: row.display_name,
+        bio: row.bio,
+        avatarPreset: row.avatar_preset,
+        coins: row.coins,
+        role: row.role,
+      });
+    }
+
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const existing = email
+        ? await client.query(
+            `
+            SELECT u.id, u.username, u.role, p.display_name, p.bio, p.avatar_preset, p.coins
+            FROM users u
+            JOIN profiles p ON p.user_id = u.id
+            WHERE u.email = $1
+            LIMIT 1
+            `,
+            [email],
+          )
+        : { rowCount: 0, rows: [] } as { rowCount: number; rows: never[] };
+
+      let userId: string;
+      let profile: ProfileSummary;
+      if (existing.rowCount) {
+        const row = existing.rows[0];
+        userId = row.id;
+        profile = {
+          id: row.id,
+          username: row.username,
+          displayName: row.display_name,
+          bio: row.bio,
+          avatarPreset: row.avatar_preset,
+          coins: row.coins,
+          role: row.role,
+        };
+      } else {
+        const username = await this.uniqueUsername(slugify(input.usernameHint?.trim() || email.split("@")[0] || displayName) || `${provider}-player`);
+        userId = randomUUID();
+        const storedEmail = email || `${provider}-${providerUserId}@oauth.fairblox.local`;
+        await client.query(
+          "INSERT INTO users (id, email, username, password_hash, role) VALUES ($1, $2, $3, $4, $5)",
+          [userId, storedEmail, username, hashPassword(randomUUID()), "creator"],
+        );
+        await client.query(
+          "INSERT INTO profiles (user_id, display_name, bio, avatar_preset, coins) VALUES ($1, $2, $3, $4, $5)",
+          [userId, displayName, `${displayName} joined with ${provider}.`, "starter", 250],
+        );
+        profile = {
+          id: userId,
+          username,
+          displayName,
+          bio: `${displayName} joined with ${provider}.`,
+          avatarPreset: "starter",
+          coins: 250,
+          role: "creator",
+        };
+      }
+
+      await client.query(
+        `
+        INSERT INTO oauth_accounts (provider, provider_user_id, user_id, email)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (provider, provider_user_id) DO UPDATE
+        SET user_id = EXCLUDED.user_id, email = EXCLUDED.email
+        `,
+        [provider, providerUserId, userId, email || null],
+      );
+      await client.query("COMMIT");
+      return this.issueAuthResponse(profile.id, profile);
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async getProfileByUsername(username: string): Promise<ProfileSummary | null> {
@@ -3319,6 +3474,19 @@ class PostgresStore implements Store {
     return { token, profile };
   }
 
+  private async uniqueUsername(base: string): Promise<string> {
+    let candidate = base.trim().toLowerCase();
+    let index = 2;
+    while (true) {
+      const existing = await this.pool.query("SELECT 1 FROM users WHERE username = $1 LIMIT 1", [candidate]);
+      if (!existing.rowCount) {
+        return candidate;
+      }
+      candidate = `${base}-${index}`.trim().toLowerCase();
+      index += 1;
+    }
+  }
+
   private async uniqueSlug(base: string): Promise<string> {
     let candidate = base;
     let index = 2;
@@ -3478,6 +3646,27 @@ export async function createStore(): Promise<Store> {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE (user_id, request_id)
+    )
+    `,
+  );
+  await pool.query(
+    `
+    CREATE TABLE IF NOT EXISTS auth_sessions (
+      token UUID PRIMARY KEY,
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+    `,
+  );
+  await pool.query(
+    `
+    CREATE TABLE IF NOT EXISTS oauth_accounts (
+      provider TEXT NOT NULL,
+      provider_user_id TEXT NOT NULL,
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      email TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (provider, provider_user_id)
     )
     `,
   );

@@ -37,8 +37,9 @@ import {
   verifyStripeWebhookEvent,
 } from "./payments.js";
 import {
-  createOAuthCallbackRedirect,
+  createOAuthClientRedirect,
   createOAuthStartUrl,
+  exchangeOAuthCode,
   listOAuthProviders,
 } from "./oauth.js";
 
@@ -355,7 +356,30 @@ app.get("/auth/oauth/:provider/callback", (req, res) => {
     res.status(404).json({ error: "OAuth provider not found" });
     return;
   }
-  res.redirect(createOAuthCallbackRedirect(provider, new URLSearchParams(req.query as Record<string, string>)));
+  const errorCode = typeof req.query.error === "string" ? req.query.error : "";
+  const code = typeof req.query.code === "string" ? req.query.code : "";
+  if (errorCode) {
+    res.redirect(createOAuthClientRedirect({ provider, status: "error", error: errorCode }));
+    return;
+  }
+  if (!code) {
+    res.redirect(createOAuthClientRedirect({ provider, status: "cancelled", error: "missing_code" }));
+    return;
+  }
+  void exchangeOAuthCode(provider, code)
+    .then((identity) => store.oauthLogin(identity))
+    .then((auth) => {
+      res.redirect(createOAuthClientRedirect({ provider, status: "success", token: auth.token }));
+    })
+    .catch((error: unknown) => {
+      res.redirect(
+        createOAuthClientRedirect({
+          provider,
+          status: "error",
+          error: error instanceof Error ? error.message : "oauth_callback_failed",
+        }),
+      );
+    });
 });
 
 app.get("/profiles/:username", (req, res) => {
