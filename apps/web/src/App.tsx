@@ -2113,7 +2113,7 @@ export function App() {
   }, [activeSession?.id]);
 
   useEffect(() => {
-    if (!sessionToken) {
+    if (!sessionToken || isRestoringSession) {
       return;
     }
     void fetch(`${API_BASE}/me/games`, {
@@ -2129,12 +2129,15 @@ export function App() {
         setMyGames(data.games);
       })
       .catch(() => setMyGames([]));
-  }, [sessionToken]);
+  }, [sessionToken, isRestoringSession]);
 
   useEffect(() => {
     if (!sessionToken) {
       setStudioProjects([]);
       setSelectedStudioProject(null);
+      return;
+    }
+    if (isRestoringSession) {
       return;
     }
     void fetch(`${API_BASE}/studio/projects`, {
@@ -2150,7 +2153,7 @@ export function App() {
         setStudioProjects(data.projects);
       })
       .catch(() => setStudioProjects([]));
-  }, [sessionToken]);
+  }, [sessionToken, isRestoringSession]);
 
   useEffect(() => {
     if (!sessionToken) {
@@ -2174,6 +2177,9 @@ export function App() {
       });
       return;
     }
+    if (isRestoringSession) {
+      return;
+    }
     void refreshAccountState(sessionToken)
       .catch(() => {
         const fallback = createDefaultAccountState(profile?.coins ?? 0);
@@ -2190,7 +2196,7 @@ export function App() {
         setProfile((current) => (current ? { ...current, coins: fallback.walletCoins } : current));
         loadEconomySummary(sessionToken);
       });
-  }, [sessionToken]);
+  }, [sessionToken, isRestoringSession]);
 
   async function persistAccountState(overrides: Partial<AccountState>) {
     if (!sessionToken) {
