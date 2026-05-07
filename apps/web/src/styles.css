@@ -3436,6 +3436,38 @@ select {
   margin-bottom: 1rem;
 }
 
+.market-preview-shell {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  border: 1px solid var(--line-hi);
+  border-radius: 18px;
+  background: rgba(10,18,32,0.76);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.market-preview-stage {
+  min-width: 0;
+}
+
+.market-avatar-stage {
+  min-height: 260px;
+}
+
+.market-preview-copy {
+  display: grid;
+  gap: 0.55rem;
+  align-content: start;
+}
+
+.market-preview-copy h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: -0.03em;
+}
+
 .market-creator-head {
   margin-bottom: 0.85rem;
 }
@@ -3814,6 +3846,10 @@ select {
 
   .market-creator-grid,
   .market-trade-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .market-preview-shell {
     grid-template-columns: 1fr;
   }
 

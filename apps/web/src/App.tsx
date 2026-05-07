@@ -1225,6 +1225,8 @@ export function App() {
   const [buyingItemId, setBuyingItemId] = useState<string | null>(null);
   const [isBuyingCurrency, setIsBuyingCurrency] = useState<boolean>(false);
   const [isTrading, setIsTrading] = useState<boolean>(false);
+  const marketplacePurchaseInFlightRef = useRef(false);
+  const currencyCheckoutInFlightRef = useRef(false);
   const runtimeInputRef = useRef({ forward: false, back: false, left: false, right: false });
   const runtimeJumpVelocityRef = useRef(0);
   const runtimeOnGroundRef = useRef(true);
@@ -3126,26 +3128,44 @@ export function App() {
       setStoreMessage("Sign in to buy marketplace items.");
       return;
     }
+    if (marketplacePurchaseInFlightRef.current || buyingItemId) {
+      setStoreMessage("A marketplace purchase is already processing. Please wait a second.");
+      return;
+    }
     if (ownedItemIds.includes(item.id)) {
       setStoreMessage(`${item.name} is already in your inventory.`);
       return;
     }
+    marketplacePurchaseInFlightRef.current = true;
     setBuyingItemId(item.id);
     try {
+      const requestId = crypto.randomUUID();
       const payload: PurchaseMarketplaceItemRequest = {
         itemId: item.id,
+        requestId,
       };
       const response = await fetch(`${API_BASE}/marketplace/purchase`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-session-token": sessionToken,
+          "x-idempotency-key": requestId,
         },
         body: JSON.stringify(payload),
       });
       const data = (await response.json()) as AccountStateResponse | ApiError;
       if (!response.ok || "error" in data) {
-        throw new Error("error" in data ? data.error : "Could not purchase item");
+        const serverMessage = "error" in data ? data.error : "Could not purchase item";
+        if (response.status === 409 && /already in your inventory/i.test(serverMessage)) {
+          throw new Error(serverMessage);
+        }
+        if (response.status === 409 && /need \d+ more coins/i.test(serverMessage)) {
+          throw new Error(`${serverMessage} Buy a currency bundle and try again.`);
+        }
+        if (response.status === 429) {
+          throw new Error("Too many purchase attempts. Please wait a moment and try again.");
+        }
+        throw new Error(serverMessage);
       }
       setWalletCoins(data.state.walletCoins);
       setOwnedItemIds(data.state.ownedItemIds);
@@ -3153,15 +3173,16 @@ export function App() {
       pushTx(`Bought ${item.name}`, -item.price);
       pushToast(`${item.name} added to your inventory!`, "success");
       loadEconomySummary(sessionToken);
+      setStoreMessage(`${item.name} added to your inventory.`);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Could not process purchase right now.";
       setStoreMessage(msg);
       pushToast(msg, "error");
-      setBuyingItemId(null);
       return;
+    } finally {
+      setBuyingItemId(null);
+      marketplacePurchaseInFlightRef.current = false;
     }
-    setBuyingItemId(null);
-    setStoreMessage(`${item.name} added to your inventory.`);
   }
 
   async function createMarketplaceListing(event: FormEvent<HTMLFormElement>) {
@@ -3318,6 +3339,11 @@ export function App() {
       setStoreMessage("Sign in to buy currency bundles.");
       return;
     }
+    if (currencyCheckoutInFlightRef.current || isBuyingCurrency) {
+      setStoreMessage("A currency checkout is already processing. Please wait.");
+      return;
+    }
+    currencyCheckoutInFlightRef.current = true;
     setIsBuyingCurrency(true);
     try {
       const priceUsd = COIN_BUNDLES.find((bundle) => bundle.coins === coins)?.priceLabel ?? "$0.00";
@@ -3341,6 +3367,9 @@ export function App() {
         const errorMessage = "error" in data ? data.error : "Could not create checkout";
         const stripeUnavailable = response.status === 503 || /stripe is not configured/i.test(errorMessage);
         if (!stripeUnavailable) {
+          if (response.status === 429) {
+            throw new Error("Too many checkout attempts. Please wait a moment and try again.");
+          }
           throw new Error(errorMessage);
         }
 
@@ -3360,7 +3389,8 @@ export function App() {
         });
         const fallbackData = (await fallbackResponse.json()) as AccountStateResponse | ApiError;
         if (!fallbackResponse.ok || "error" in fallbackData) {
-          throw new Error("error" in fallbackData ? fallbackData.error : "Could not process fallback purchase");
+          const fallbackMessage = "error" in fallbackData ? fallbackData.error : "Could not process fallback purchase";
+          throw new Error(`Stripe checkout is unavailable right now. ${fallbackMessage}`);
         }
 
         setWalletCoins(fallbackData.state.walletCoins);
@@ -3387,6 +3417,8 @@ export function App() {
       pushToast(msg, "error");
       setIsBuyingCurrency(false);
       return;
+    } finally {
+      currencyCheckoutInFlightRef.current = false;
     }
     setStoreMessage(`Redirecting to checkout for ${title}.`);
   }
@@ -3793,6 +3825,13 @@ export function App() {
       ? allMarketItems.find((item) => item.id === accessoryCatalogByValue.get(avatarDraft.accessory)?.id) ?? null
       : null);
   const equippedMarketplaceItem = equippedAccessoryItem;
+  const avatarViewerWearables = equippedWearableEntries.map(({ slotKey, item }) => ({
+    slotKey,
+    modelKind: item.modelKind,
+    accent: item.accent,
+    assetScale: item.assetScale,
+    itemName: item.name,
+  }));
   const normalizedDiscoverQuery = discoverQuery.trim().toLowerCase();
   const featuredDiscoverIds = new Set(
     [...games]
@@ -3886,6 +3925,28 @@ export function App() {
       if (marketSort === "newest") return (b.createdAt ?? 0) - (a.createdAt ?? 0);
       return 0;
     });
+  const marketplacePreviewItem = marketTab === "create"
+    ? {
+        id: "draft-market-item",
+        name: creatorForm.name.trim() || "Draft item",
+        category: creatorForm.category,
+        modelKind: creatorForm.modelKind,
+        wearableSlot: creatorForm.wearableSlot,
+        accent: creatorForm.accent,
+        assetScale: creatorForm.assetScale,
+      }
+    : marketTab === "shop"
+      ? allMarketItems.find((item) => item.id === marketFocusItemId) ?? filteredMarketItems[0] ?? null
+      : null;
+  const marketplacePreviewWearable = marketplacePreviewItem
+    ? {
+        slotKey: getWearableSlotForItem(marketplacePreviewItem),
+        modelKind: marketplacePreviewItem.modelKind,
+        accent: marketplacePreviewItem.accent,
+        assetScale: marketplacePreviewItem.assetScale,
+        itemName: marketplacePreviewItem.name,
+      }
+    : null;
 
   useEffect(() => {
     if (activeView !== "inventory" || marketTab !== "shop" || !marketFocusItemId) {
@@ -4638,6 +4699,7 @@ export function App() {
                             bodyType={avatarRigDraft.bodyType}
                             heightScale={avatarRigDraft.heightScale}
                             headScale={avatarRigDraft.headScale}
+                            wearables={avatarViewerWearables}
                           />
                         </Suspense>
                         <div className="av-accessory-tag">
@@ -5052,6 +5114,40 @@ export function App() {
 
                 {storeMessage ? <p className="hint" style={{marginBottom: "0.75rem"}}>{storeMessage}</p> : null}
 
+                {(marketTab === "shop" || marketTab === "create") && marketplacePreviewWearable ? (
+                  <section className="market-preview-shell">
+                    <div className="market-preview-stage">
+                      <div className="avatar-stage market-avatar-stage">
+                        <Suspense fallback={null}>
+                          <AvatarViewer
+                            skinTone={avatarDraft.skinTone}
+                            shirtColor={avatarDraft.shirtColor}
+                            pantsColor={avatarDraft.pantsColor}
+                            bodyType={avatarRigDraft.bodyType}
+                            heightScale={avatarRigDraft.heightScale}
+                            headScale={avatarRigDraft.headScale}
+                            wearables={avatarViewerWearables}
+                            previewWearable={marketplacePreviewWearable}
+                          />
+                        </Suspense>
+                      </div>
+                    </div>
+                    <div className="market-preview-copy">
+                      <span className="tool-title">3D Preview</span>
+                      <h3>{marketplacePreviewItem?.name}</h3>
+                      <p className="hint">
+                        Previewing {marketplacePreviewWearable.slotKey} placement on your current rig.
+                        {marketTab === "create" ? " Adjust the item fields and this preview updates live." : " Hover or select items in the shop to compare them on your avatar."}
+                      </p>
+                      <div className="editor-meta">
+                        <span>{marketplacePreviewItem?.category}</span>
+                        <span>{marketplacePreviewWearable.modelKind}</span>
+                        <span>{marketplacePreviewWearable.slotKey}</span>
+                      </div>
+                    </div>
+                  </section>
+                ) : null}
+
                 {marketTab === "create" ? (
                   <form className="market-creator-panel" onSubmit={createMarketplaceListing}>
                     <div className="market-creator-head">
@@ -5232,6 +5328,9 @@ export function App() {
                         id={`market-item-${item.id}`}
                         className={owned ? "market-card market-card-owned" : "market-card"}
                         style={isFocused ? { outline: "2px solid #22c55e", boxShadow: "0 0 0 4px rgba(34, 197, 94, 0.22)" } : undefined}
+                        onMouseEnter={() => setMarketFocusItemId(item.id)}
+                        onFocus={() => setMarketFocusItemId(item.id)}
+                        onClick={() => setMarketFocusItemId(item.id)}
                       >
                         <div className="market-card-art" style={{ background: item.accent }}>
                           <MarketplaceModel kind={item.modelKind} emoji={item.emoji} />
