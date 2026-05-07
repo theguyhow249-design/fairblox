@@ -2243,6 +2243,10 @@ export function App() {
     void submitAuth("/auth/login", loginForm);
   }
 
+  function handleSocialAuth(provider: "Google" | "Discord" | "Apple") {
+    pushToast(`${provider} sign-in UI is ready. Backend OAuth wiring is the next step.`, "info");
+  }
+
   function handleCreateGame(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!sessionToken) {
@@ -4176,6 +4180,14 @@ export function App() {
                           onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
                         />
                       </label>
+                      <div className="auth-provider-stack">
+                        <span className="auth-provider-label">Or continue with</span>
+                        <div className="auth-provider-row">
+                          <button type="button" className="secondary auth-provider-btn" onClick={() => handleSocialAuth("Google")}>Google</button>
+                          <button type="button" className="secondary auth-provider-btn" onClick={() => handleSocialAuth("Discord")}>Discord</button>
+                          <button type="button" className="secondary auth-provider-btn" onClick={() => handleSocialAuth("Apple")}>Apple</button>
+                        </div>
+                      </div>
                       <button type="submit">Log in</button>
                       <p className="auth-demo">Demo account: <strong>plutobuilds</strong> / <strong>demo123</strong></p>
                     </form>
@@ -4220,6 +4232,14 @@ export function App() {
                           onChange={(event) => setSignupForm((current) => ({ ...current, password: event.target.value }))}
                         />
                       </label>
+                      <div className="auth-provider-stack">
+                        <span className="auth-provider-label">Or start with</span>
+                        <div className="auth-provider-row">
+                          <button type="button" className="secondary auth-provider-btn" onClick={() => handleSocialAuth("Google")}>Google</button>
+                          <button type="button" className="secondary auth-provider-btn" onClick={() => handleSocialAuth("Discord")}>Discord</button>
+                          <button type="button" className="secondary auth-provider-btn" onClick={() => handleSocialAuth("Apple")}>Apple</button>
+                        </div>
+                      </div>
                       <button type="submit">Create Fairblox account</button>
                     </form>
                   )}
@@ -4238,7 +4258,7 @@ export function App() {
                       className={authInfoTab === "faq" ? "auth-info-tab auth-info-tab-active" : "auth-info-tab"}
                       onClick={() => setAuthInfoTab("faq")}
                     >
-                      FAQ
+                      Game
                     </button>
                     <button
                       type="button"
@@ -4251,8 +4271,8 @@ export function App() {
                   {authInfoTab === "about" ? (
                     <div className="auth-info-panel">
                       <span className="auth-shell-kicker">About Fairblox</span>
-                      <h2>One account for worlds, avatars, inventory, and creator tools.</h2>
-                      <p>Use the same profile for live sessions, Studio projects, marketplace items, and saved avatar loadouts.</p>
+                      <h2>One account for worlds, avatars, items, and creator tools.</h2>
+                      <p>Use the same profile for live sessions, saved avatar loadouts, marketplace ownership, and world creation.</p>
                       <div className="auth-shell-metrics">
                         <span className="auth-shell-metric">Playable worlds</span>
                         <span className="auth-shell-metric">Avatar inventory</span>
@@ -4262,19 +4282,19 @@ export function App() {
                   ) : null}
                   {authInfoTab === "faq" ? (
                     <div className="auth-info-panel">
-                      <span className="auth-shell-kicker">FAQ</span>
+                      <span className="auth-shell-kicker">Game Info</span>
                       <div className="auth-faq-list">
                         <div>
-                          <strong>Do I need a separate creator account?</strong>
-                          <p>No. One account covers playing, building, publishing, and inventory.</p>
+                          <strong>What is Fairblox?</strong>
+                          <p>A browser-first game platform built around player-made worlds, 3D avatars, and a UGC marketplace.</p>
                         </div>
                         <div>
-                          <strong>Will my avatar and items stay saved?</strong>
-                          <p>Yes. Wearables, rig settings, and account state stay tied to your profile.</p>
+                          <strong>What happens after I sign in?</strong>
+                          <p>You can browse games, join sessions, save outfits, buy items, and move into creator tools from the same account.</p>
                         </div>
                         <div>
-                          <strong>Can I use email or username to log in?</strong>
-                          <p>Yes. The login form accepts either one.</p>
+                          <strong>What is the long-term direction?</strong>
+                          <p>Unity-powered live worlds, creator publishing, tradable items, and a real 3D avatar system.</p>
                         </div>
                       </div>
                     </div>
@@ -5446,11 +5466,11 @@ export function App() {
       ) : null}
 
       {activeView === "creator" ? (
+      profile ? (
       <section className="section split">
         <div className="feature-box">
           <h2>Creator Dashboard</h2>
-          {profile ? (
-            <>
+          <>
               <form className="draft-form" onSubmit={handleCreateGame}>
                 <input
                   placeholder="Game title"
@@ -5534,10 +5554,7 @@ export function App() {
                   )}
                 </div>
               </div>
-            </>
-          ) : (
-            <p>Log in to create draft games and start the creator flow.</p>
-          )}
+          </>
         </div>
         <div className="feature-box">
           <h2>Editor</h2>
@@ -6109,6 +6126,18 @@ export function App() {
           )}
         </div>
       </section>
+      ) : (
+      <section className="section">
+        <div className="feature-box">
+          <h2>Creator Tools</h2>
+          <p className="hint">Log in or create an account to open the creator dashboard, edit worlds, and publish games.</p>
+          <div className="hero-actions">
+            <button type="button" onClick={() => setActiveView("home")}>Log in</button>
+            <button type="button" className="secondary" onClick={() => setActiveView("discover")}>Browse games</button>
+          </div>
+        </div>
+      </section>
+      )
       ) : null}
     </main>
   );

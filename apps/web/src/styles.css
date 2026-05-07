@@ -563,6 +563,30 @@ h3 {
   font-weight: 600;
 }
 
+.auth-provider-stack {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.auth-provider-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.auth-provider-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.auth-provider-btn {
+  margin-top: 0;
+  padding-inline: 0.7rem;
+  min-height: 42px;
+  font-size: 0.82rem;
+}
+
 .auth-card button {
   margin-top: 0.2rem;
 }
