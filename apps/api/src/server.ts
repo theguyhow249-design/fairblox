@@ -32,9 +32,15 @@ import { featuredGames } from "./data.js";
 import { sendAlert } from "./discord.js";
 import {
   createStripeCurrencyCheckoutSession,
-  isStripeConfigured,
+  isStripeCheckoutConfigured,
+  isStripeWebhookConfigured,
   verifyStripeWebhookEvent,
 } from "./payments.js";
+import {
+  createOAuthCallbackRedirect,
+  createOAuthStartUrl,
+  listOAuthProviders,
+} from "./oauth.js";
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -99,8 +105,8 @@ function getFeaturedFallbackDetail(slug: string): PublishedGameDetail | null {
 }
 
 app.post("/payments/stripe/webhook", express.raw({ type: "application/json" }), (req, res) => {
-  if (!isStripeConfigured()) {
-    res.status(503).json({ error: "Stripe is not configured on the server." });
+  if (!isStripeWebhookConfigured()) {
+    res.status(503).json({ error: "Stripe webhook verification is not configured on the server." });
     return;
   }
   const signature = String(req.header("stripe-signature") || "").trim();
@@ -315,6 +321,41 @@ app.post("/auth/login", (req, res) => {
         error: error instanceof Error ? error.message : "Login failed",
       });
     });
+});
+
+app.get("/auth/oauth/providers", (_req, res) => {
+  res.json({ providers: listOAuthProviders() });
+});
+
+app.get("/auth/oauth/start/:provider", (req, res) => {
+  const provider = String(req.params.provider || "").trim().toLowerCase();
+  if (provider !== "google" && provider !== "discord" && provider !== "apple") {
+    res.status(404).json({ error: "OAuth provider not found" });
+    return;
+  }
+  try {
+    const authUrl = createOAuthStartUrl(provider);
+    res.json({
+      provider,
+      configured: true,
+      authUrl,
+    });
+  } catch (error: unknown) {
+    res.status(503).json({
+      provider,
+      configured: false,
+      error: error instanceof Error ? error.message : "OAuth is not configured.",
+    });
+  }
+});
+
+app.get("/auth/oauth/:provider/callback", (req, res) => {
+  const provider = String(req.params.provider || "").trim().toLowerCase();
+  if (provider !== "google" && provider !== "discord" && provider !== "apple") {
+    res.status(404).json({ error: "OAuth provider not found" });
+    return;
+  }
+  res.redirect(createOAuthCallbackRedirect(provider, new URLSearchParams(req.query as Record<string, string>)));
 });
 
 app.get("/profiles/:username", (req, res) => {
@@ -587,8 +628,8 @@ app.get("/economy/summary", (req, res) => {
 });
 
 app.post("/payments/currency/checkout", (req, res) => {
-  if (!isStripeConfigured()) {
-    res.status(503).json({ error: "Stripe is not configured on the server." });
+  if (!isStripeCheckoutConfigured()) {
+    res.status(503).json({ error: "Stripe checkout is not configured on the server." });
     return;
   }
   const token = String(req.header("x-session-token") || "");

@@ -62,6 +62,24 @@ export interface AuthResponse {
   profile: ProfileSummary;
 }
 
+export type OAuthProvider = "google" | "discord" | "apple";
+
+export interface OAuthProviderStatus {
+  provider: OAuthProvider;
+  configured: boolean;
+  label: string;
+}
+
+export interface OAuthProvidersResponse {
+  providers: OAuthProviderStatus[];
+}
+
+export interface OAuthStartResponse {
+  provider: OAuthProvider;
+  configured: boolean;
+  authUrl?: string;
+}
+
 export interface SignupRequest {
   email: string;
   username: string;

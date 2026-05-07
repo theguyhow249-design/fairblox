@@ -14,6 +14,8 @@ import type {
   GameMapData,
   GameSessionSummary,
   LoginRequest,
+  OAuthProvidersResponse,
+  OAuthStartResponse,
   MarketplaceItemRecord,
   MarketplaceItemsResponse,
   EconomySummaryResponse,
@@ -1257,6 +1259,8 @@ export function App() {
   });
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [authInfoTab, setAuthInfoTab] = useState<"about" | "faq" | "support">("about");
+  const [oauthConfiguredProviders, setOauthConfiguredProviders] = useState<Set<string>>(new Set());
+  const [oauthLoadingProvider, setOauthLoadingProvider] = useState<"Google" | "Discord" | "Apple" | null>(null);
   const [gameForm, setGameForm] = useState<CreateGameRequest>({
     title: "",
     description: "",
@@ -2245,8 +2249,21 @@ export function App() {
     void submitAuth("/auth/login", loginForm);
   }
 
-  function handleSocialAuth(provider: "Google" | "Discord" | "Apple") {
-    pushToast(`${provider} sign-in UI is ready. Backend OAuth wiring is the next step.`, "info");
+  async function handleSocialAuth(provider: "Google" | "Discord" | "Apple") {
+    const providerKey = provider.toLowerCase();
+    setOauthLoadingProvider(provider);
+    try {
+      const response = await fetch(`${API_BASE}/auth/oauth/start/${providerKey}`);
+      const data = (await response.json()) as OAuthStartResponse | ApiError;
+      if (!response.ok || !("authUrl" in data) || !data.authUrl) {
+        throw new Error(("error" in data && data.error) || `${provider} sign-in is not configured yet.`);
+      }
+      window.location.href = data.authUrl;
+    } catch (error: unknown) {
+      pushToast(error instanceof Error ? error.message : `${provider} sign-in failed.`, "error");
+    } finally {
+      setOauthLoadingProvider(null);
+    }
   }
 
   function handleCreateGame(event: FormEvent<HTMLFormElement>) {
@@ -3966,6 +3983,45 @@ export function App() {
     };
   }, [activeView, marketTab, marketFocusItemId, filteredMarketItems.length]);
 
+  useEffect(() => {
+    void fetch(`${API_BASE}/auth/oauth/providers`)
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Could not load social sign-in providers.");
+        }
+        return (await response.json()) as OAuthProvidersResponse;
+      })
+      .then((data) => {
+        setOauthConfiguredProviders(new Set(data.providers.filter((provider) => provider.configured).map((provider) => provider.label)));
+      })
+      .catch(() => {
+        setOauthConfiguredProviders(new Set());
+      });
+  }, []);
+
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      const provider = url.searchParams.get("oauth");
+      const status = url.searchParams.get("oauth_status");
+      if (!provider || !status) {
+        return;
+      }
+      if (status === "pending") {
+        pushToast(`${provider} sign-in returned to Fairblox. Complete provider token exchange next.`, "info");
+      } else if (status === "error") {
+        pushToast(`${provider} sign-in was cancelled or rejected by the provider.`, "error");
+      }
+      url.searchParams.delete("oauth");
+      url.searchParams.delete("oauth_status");
+      url.searchParams.delete("oauth_notice");
+      url.searchParams.delete("oauth_error");
+      window.history.replaceState({}, "", url.toString());
+    } catch {
+      // Ignore URL parsing issues in embedded contexts.
+    }
+  }, []);
+
   const limitedOwnedItems = ownedItems.filter((item) => item.limited);
   const limitedMarketTargets = allMarketItems.filter((item) => item.limited && !ownedItemIds.includes(item.id));
   const coinLabel = coinName.trim() || "FariBucks";
@@ -4244,9 +4300,15 @@ export function App() {
                       <div className="auth-provider-stack">
                         <span className="auth-provider-label">Or continue with</span>
                         <div className="auth-provider-row">
-                          <button type="button" className="secondary auth-provider-btn" onClick={() => handleSocialAuth("Google")}>Google</button>
-                          <button type="button" className="secondary auth-provider-btn" onClick={() => handleSocialAuth("Discord")}>Discord</button>
-                          <button type="button" className="secondary auth-provider-btn" onClick={() => handleSocialAuth("Apple")}>Apple</button>
+                          <button type="button" className="secondary auth-provider-btn" onClick={() => void handleSocialAuth("Google")} disabled={oauthLoadingProvider !== null}>
+                            {oauthLoadingProvider === "Google" ? "Opening..." : oauthConfiguredProviders.has("Google") ? "Google" : "Google Soon"}
+                          </button>
+                          <button type="button" className="secondary auth-provider-btn" onClick={() => void handleSocialAuth("Discord")} disabled={oauthLoadingProvider !== null}>
+                            {oauthLoadingProvider === "Discord" ? "Opening..." : oauthConfiguredProviders.has("Discord") ? "Discord" : "Discord Soon"}
+                          </button>
+                          <button type="button" className="secondary auth-provider-btn" onClick={() => void handleSocialAuth("Apple")} disabled={oauthLoadingProvider !== null}>
+                            {oauthLoadingProvider === "Apple" ? "Opening..." : oauthConfiguredProviders.has("Apple") ? "Apple" : "Apple Soon"}
+                          </button>
                         </div>
                       </div>
                       <button type="submit">Log in</button>
@@ -4296,9 +4358,15 @@ export function App() {
                       <div className="auth-provider-stack">
                         <span className="auth-provider-label">Or start with</span>
                         <div className="auth-provider-row">
-                          <button type="button" className="secondary auth-provider-btn" onClick={() => handleSocialAuth("Google")}>Google</button>
-                          <button type="button" className="secondary auth-provider-btn" onClick={() => handleSocialAuth("Discord")}>Discord</button>
-                          <button type="button" className="secondary auth-provider-btn" onClick={() => handleSocialAuth("Apple")}>Apple</button>
+                          <button type="button" className="secondary auth-provider-btn" onClick={() => void handleSocialAuth("Google")} disabled={oauthLoadingProvider !== null}>
+                            {oauthLoadingProvider === "Google" ? "Opening..." : oauthConfiguredProviders.has("Google") ? "Google" : "Google Soon"}
+                          </button>
+                          <button type="button" className="secondary auth-provider-btn" onClick={() => void handleSocialAuth("Discord")} disabled={oauthLoadingProvider !== null}>
+                            {oauthLoadingProvider === "Discord" ? "Opening..." : oauthConfiguredProviders.has("Discord") ? "Discord" : "Discord Soon"}
+                          </button>
+                          <button type="button" className="secondary auth-provider-btn" onClick={() => void handleSocialAuth("Apple")} disabled={oauthLoadingProvider !== null}>
+                            {oauthLoadingProvider === "Apple" ? "Opening..." : oauthConfiguredProviders.has("Apple") ? "Apple" : "Apple Soon"}
+                          </button>
                         </div>
                       </div>
                       <button type="submit">Create Fairblox account</button>
